@@ -1,0 +1,192 @@
+;;; mint-tests.el --- Tests for mint.el -*- lexical-binding: t; -*-
+
+;; Run from the repository root (needs Go):
+;;   emacs -Q --batch -L emacs -l emacs/mint-tests.el -f ert-run-tests-batch-and-exit
+
+;;; Code:
+
+(require 'ert)
+(require 'cl-lib)
+(require 'mint)
+
+(defconst mint-tests-root
+  (expand-file-name ".." (file-name-directory (or load-file-name buffer-file-name))))
+
+(defvar mint-tests--bin nil "Built demo binary, shared by the tests.")
+
+(defun mint-tests--demo ()
+  "Build examples/demo once into a temporary folder and return its path."
+  (or mint-tests--bin
+      (let ((out (expand-file-name "demo" (make-temp-file "mint-tests" t))))
+        (setq mint-tests--bin (mint-build (expand-file-name "examples/demo" mint-tests-root) out)))))
+
+(ert-deftest mint-info-reads-a-mint-app ()
+  (let ((info (mint-app-info (mint-tests--demo))))
+    (should (equal (alist-get 'crumb info) "Demo"))
+    (should (member "Widgets" (mapcar (lambda (i) (alist-get 'label i)) (alist-get 'items info))))))
+
+(ert-deftest mint-info-gives-up-on-other-programs ()
+  ;; A program that ignores --mint-info and never exits must time out, not
+  ;; hang Emacs.
+  (let* ((script (make-temp-file "mint-silent" nil ".sh" "#!/bin/sh\nsleep 30\n"))
+         (mint-info-timeout 1)
+         (start (float-time)))
+    (set-file-modes script #o755)
+    (should (null (mint-app-info script)))
+    (should (< (- (float-time) start) 3))
+    (should (>= (- (float-time) start) 0.9))))
+
+(ert-deftest mint-info-of-missing-program-is-nil ()
+  (should (null (mint-app-info "/definitely/not/a/program"))))
+
+(ert-deftest mint-build-only-rebuilds-when-stale ()
+  (let* ((src (make-temp-file "mint-src" t))
+         (bin (expand-file-name "app" src)))
+    (copy-directory (expand-file-name "templates/app" mint-tests-root) (file-name-as-directory src) nil nil t)
+    (with-temp-file (expand-file-name "go.mod" src)
+      (insert (format "module example.com/app\n\ngo 1.21\n\nrequire github.com/CurtisD4q/Mint-Interfaces v0.0.0\n\nreplace github.com/CurtisD4q/Mint-Interfaces => %s\n"
+                      mint-tests-root)))
+    (mint-build src bin)
+    (should (file-executable-p bin))
+    (should-not (mint--stale-p bin src))
+    (let ((before (file-attribute-modification-time (file-attributes bin))))
+      (mint-build src bin)                    ; nothing changed: no rebuild
+      (should (equal before (file-attribute-modification-time (file-attributes bin))))
+      (sleep-for 1.1)
+      (set-file-times (expand-file-name "main.go" src))
+      (should (mint--stale-p bin src))
+      (mint-build src bin)                    ; source changed: rebuilt
+      (should-not (equal before (file-attribute-modification-time (file-attributes bin)))))))
+
+(ert-deftest mint-finds-apps-in-folders-and-skips-others ()
+  (let* ((dir (make-temp-file "mint-apps" t))
+         (other (expand-file-name "not-mint" dir))
+         (mint--apps nil)
+         (mint-info-timeout 1)
+         (mint-app-directories (list dir)))
+    (copy-file (mint-tests--demo) (expand-file-name "demo" dir))
+    (with-temp-file other (insert "#!/bin/sh\necho hello\n"))
+    (set-file-modes other #o755)
+    (let ((names (mapcar #'car (mint--candidates))))
+      (should (member "Demo" names))
+      (should-not (member "not-mint" names)))))
+
+(ert-deftest mint-define-app-registers-and-defines ()
+  (let ((mint--apps nil))
+    (eval '(mint-define-app mint-tests-demo-cmd "Demo app" "/some/where") t)
+    (should (fboundp 'mint-tests-demo-cmd))
+    (should (equal (alist-get "Demo app" mint--apps nil nil #'equal) "/some/where"))))
+
+(ert-deftest mint-environment-follows-settings ()
+  (let ((mint-key-profile 'vim) (mint-match-theme nil))
+    (should (equal (mint--environment) '("MINT_KEYS=vim"))))
+  (let ((mint-key-profile nil) (mint-match-theme nil))
+    (should (null (mint--environment)))))
+
+(ert-deftest mint-hex-converts-colours ()
+  (should (equal (mint--hex "#ff8000") "#ff8000"))
+  (should (equal (mint--hex "#FF8000") "#ff8000"))
+  (should (null (mint--hex "unspecified-fg")))
+  (should (null (mint--hex nil))))
+
+;; term decides it is in char mode by comparing the local map with
+;; `term-raw-map'.  If it thinks it is in line mode, it keeps output below
+;; the screen and the buffer grows with every redraw.
+(ert-deftest mint-term-buffer-is-in-char-mode ()
+  (let* ((buf (make-term "mint-char-mode-test" "sleep" nil "5"))
+         (kill-buffer-query-functions nil))
+    (unwind-protect
+        (progn
+          (mint--configure-term-buffer buf)
+          (with-current-buffer buf
+            (should (term-in-char-mode))
+            ;; Our own keys are still there.
+            (should (eq (key-binding [escape]) #'mint--send-escape))
+            ;; The global map is untouched.
+            (should-not (eq (default-value 'term-raw-map) term-raw-map))))
+      (kill-buffer buf))))
+
+;; A full app in term mode: however much it redraws, the buffer is never
+;; taller than the window.
+(ert-deftest mint-term-mode-buffer-stays-the-window-height ()
+  (let* ((mint-display 'term)
+         (mint-close-buffer-on-exit t)
+         (kill-buffer-query-functions nil)
+         (buf (mint-run (mint-tests--demo) "demo-height-test")))
+    (setq buf (or (and (bufferp buf) buf) (get-buffer "*demo-height-test*")
+                  (seq-find #'get-buffer-process (buffer-list))))
+    (unwind-protect
+        (with-current-buffer buf
+          (let ((proc (get-buffer-process buf)))
+            (accept-process-output proc 2)
+            (dotimes (_ 8)
+              (term-send-raw-string "\e[B")
+              (accept-process-output proc 0.3))
+            (accept-process-output proc 1)
+            (should (term-in-char-mode))
+            (should (<= (count-lines (point-min) (point-max)) term-height))))
+      (when (buffer-live-p buf) (kill-buffer buf)))))
+
+;; Esc is bound in a term buffer, so Emacs does not decode a mouse report:
+;; it arrives as Esc and typed keys, counted from the frame's top left.
+;; mint--send-escape reads it whole and passes it on at the window's
+;; position.
+(ert-deftest mint-mouse-report-moves-to-the-window ()
+  ;; A window whose body starts at column 0, line 9 of the frame.
+  (let ((edges '(0 9 100 29)))
+    (should (equal (mint--mouse-report-in-window "0;10;20" ?M edges) "\e[<0;10;11M"))
+    (should (equal (mint--mouse-report-in-window "0;10;20" ?m edges) "\e[<0;10;11m"))
+    (should (equal (mint--mouse-report-in-window "64;1;10" ?M edges) "\e[<64;1;1M"))   ; wheel, top left
+    (should (equal (mint--mouse-report-in-window "0;100;29" ?M edges) "\e[<0;100;20M")) ; bottom right
+    (should-not (mint--mouse-report-in-window "0;10;9" ?M edges))   ; above: another window
+    (should-not (mint--mouse-report-in-window "0;10;30" ?M edges))  ; below
+    (should-not (mint--mouse-report-in-window "0;101;20" ?M edges)) ; to the right
+    (should-not (mint--mouse-report-in-window "0;10" ?M edges))     ; not a report
+    (should-not (mint--mouse-report-in-window "a;b;c" ?M edges))))
+
+(ert-deftest mint-send-escape-reads-mouse-reports-and-keeps-keys ()
+  (let (sent)
+    (cl-letf (((symbol-function 'term-send-raw-string) (lambda (s) (push s sent)))
+              ((symbol-function 'window-body-edges) (lambda (&rest _) '(0 9 100 29))))
+      ;; A click inside the window.
+      (let ((unread-command-events (append "[<0;10;20M" nil)))
+        (mint--send-escape)
+        (should (equal (pop sent) "\e[<0;10;11M"))
+        (should (null unread-command-events)))
+      ;; A click in another window: nothing is sent.
+      (let ((unread-command-events (append "[<0;10;3M" nil)))
+        (mint--send-escape)
+        (should (null sent))
+        (should (null unread-command-events)))
+      ;; Esc on its own.
+      (let ((unread-command-events nil))
+        (mint--send-escape)
+        (should (equal (pop sent) "\e")))
+      ;; Esc then a key that is not a report: the key is put back.
+      (let ((unread-command-events (append "OA" nil)))
+        (mint--send-escape)
+        (should (equal (pop sent) "\e"))
+        (should (equal unread-command-events (append "OA" nil))))
+      (let ((unread-command-events (append "[A" nil)))
+        (mint--send-escape)
+        (should (equal (pop sent) "\e"))
+        (should (equal unread-command-events (append "[A" nil)))))))
+
+(ert-deftest mint-term-filter-holds-back-split-characters ()
+  ;; "━" is three bytes; send it in two pieces right after an escape code.
+  (let* ((buf (generate-new-buffer " *mint-term-test*"))
+         (proc (start-process "mint-test" buf "sleep" "30")))
+    (unwind-protect
+        (with-current-buffer buf
+          (term-mode)
+          (setq term-width 20 term-height 3)
+          (let ((bytes (encode-coding-string "\e[1;1H\e[38;5;141m━━x" 'utf-8)))
+            (mint--term-filter proc (substring bytes 0 18))
+            (mint--term-filter proc (substring bytes 18)))
+          (should (string-match-p "━━x" (buffer-string)))
+          (should-not (string-match-p "[\x3fff80-\x3fffff]" (buffer-string))))
+      (delete-process proc)
+      (kill-buffer buf))))
+
+(provide 'mint-tests)
+;;; mint-tests.el ends here

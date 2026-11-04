@@ -1,2 +1,825 @@
-# Mint-Interfaces-Experimental
-This repository is purposed for the experimentation of new features to be added onto Mint Interfaces
+# Mint Interfaces (Go)
+
+**Version 1.0.1**, a fix release on top of 1.0.0, the first stable release. Every app reports it: `mytool --version` prints `mytool 1.2.0 (Mint-Interfaces 1.0.1)`.
+
+A zero-dependency terminal UI library, ported from the Lua original ([mint-interfaces-legacy](https://github.com/CurtisD4q/mint-interfaces-legacy)).
+
+The library is the generic interface layer from [Terminal Settings Manager](https://github.com/CurtisD4q/Terminal-Settings-Manager) by Curtis (Apache-2.0). It draws a rounded frame (purple by default, with six more [colour themes](#colour)) with a title on the left and a breadcrumb on the right. Inside are a home list (icon, bold title, dim description), a selection bar, value rows, sliders, `‹ ›` pickers, toggles, actions, section headers, a scrollbar, and a key-hint footer. Keyboard and mouse both work: click selects, double-click opens, and the wheel scrolls. Redraws are dirty-gated, so an idle screen does not repaint.
+
+On top of the original, it adds dividers and spacing, text styles, collapsible sections, slider ranges and units, progress bars, number steppers, checkboxes, radio groups, toasts, status badges, a loading spinner, background jobs with live output, and a catalogue for building interfaces for command-line programs. See [Additions](#additions). Every app also gets standard command-line flags, a Theme screen, emacs and vim key profiles, and can be launched from Emacs, matching its theme. See [Standalone binaries and flags](#standalone-binaries-and-flags), [Keys](#keys) and [Running from Emacs](#running-from-emacs-emacsmintel).
+
+There is no settings logic and no system backend in the library. An app describes screens as structs and handles its own data.
+
+It uses only Go's standard library: no Charm, no tcell, and no `golang.org/x/...`. See [Prerequisites](#prerequisites) for what building, running and the Emacs integration need.
+
+```
+go run ./examples/example   # the program below
+go run ./examples/demo      # every original widget and dialog
+go run ./examples/features  # the additions, including a background job
+```
+## Screenshots
+
+**Terminal**
+<p align="center">
+  <img src="screenshots/mint-img1.png" width="48%" alt="Mint interface 1">
+  <img src="screenshots/mint-img2.png" width="48%" alt="Mint interface 2">
+  <img src="screenshots/mint-img3.png" width="48%" alt="Mint interface 3">
+</p>
+
+
+**Emacs**
+<p align="center">
+  <img src="screenshots/mint-emacs-img1.png" width="48%" alt="Mint interface 4">
+  <img src="screenshots/mint-emacs-img2.png" width="48%" alt="Mint interface 5">
+</p>
+
+## Quickstart: Wrap any CLI program in 3 steps
+
+You can generate and compile a full Mint interface for any installed command-line program in three steps (see [Turnkey CLI apps and automated scaffolding](#turnkey-cli-apps-mintappkit-and-automated-scaffolding-toolsmint-gen) and [Standalone binaries and flags](#standalone-binaries-and-flags) below for full details):
+
+1. **Check compatibility (optional):** Verify the program works in a pure TUI and inspect or cache your terminal's capability profile in `~/.config/mint-interfaces/termcaps.json` (`--list-archetypes` lists the 38 archetypes; `--probe-term` refreshes the terminal probe):
+   ```sh
+   go run ./tools/mint-gen --check nmap
+   ```
+2. **Generate and compile in one command:** Parse `man` + `--help`, recognise what kind of program it is (one of 38 archetypes), scaffold `apps/<tool>/`, and build the static binary:
+   ```sh
+   go run ./tools/mint-gen --build nmap
+   ```
+3. **Run your new interface:** Launch the standalone binary in your terminal (or via `M-x nmap-mint` in [Emacs](#running-from-emacs-emacsmintel)):
+   ```sh
+   ./apps/nmap/nmap-mint
+   ```
+
+### Global install: Run `mint-gen` from anywhere
+
+Move the `mint-interfaces` folder to `/usr/local/share/mint-interfaces` and install `/usr/local/bin/mint-gen` so you can check, build, and run any tool's interface from any directory:
+
+1. Move the repository to `/usr/local/share/mint-interfaces` and make `apps/` writable by your user so builds do not need `sudo`:
+   ```sh
+   sudo mv mint-interfaces /usr/local/share/mint-interfaces
+   sudo mkdir -p /usr/local/share/mint-interfaces/apps
+   sudo chown -R "$USER:$USER" /usr/local/share/mint-interfaces/apps
+   ```
+2. Install `/usr/local/bin/mint-gen` to invoke `mint-gen` from `/usr/local/share/mint-interfaces`:
+   ```sh
+   sudo tee /usr/local/bin/mint-gen >/dev/null << 'EOF'
+   #!/usr/bin/env sh
+   exec go -C /usr/local/share/mint-interfaces run ./tools/mint-gen "$@"
+   EOF
+   sudo chmod +x /usr/local/bin/mint-gen
+   ```
+
+Once installed, the steps from any directory are:
+
+1. **Check compatibility (optional):** Verify the program works in a pure TUI and cache your terminal's capability profile.
+   ```sh
+   mint-gen --check nmap
+   ```
+2. **Generate and compile:** Parse `man` and `--help`, scaffold `apps/nmap/`, and compile the static binary.
+   ```sh
+   mint-gen --build nmap
+   ```
+3. **Run your new interface:** Launch the compiled `nmap` interface (building it first if needed).
+   ```sh
+   mint-gen --run nmap
+   ```
+4. **Remove a build (optional):** Delete the generated `apps/nmap/` folder and compiled binary.
+   ```sh
+   mint-gen --remove nmap
+   ```
+5. **List your apps:** Show the apps in the repository's `apps/` folder, one per line.
+   ```sh
+   mint-gen --list
+   ```
+6. **Remove every app (optional):** List every app mint-gen built in `apps/`, ask to confirm (y/n), then remove them all. Anything other than `y` or `yes` removes nothing.
+   ```sh
+   mint-gen --purge
+   ```
+7. **See what mint-gen understood (optional):** which archetype it chose, how sure it is and the evidence that decided it, what the program reads and writes, where "Save output to file" will send the file, and the evidence behind every option's role.
+   ```sh
+   mint-gen --explain ffmpeg
+   ```
+8. **Set the colours for every app (optional):** save one of the seven [themes](#colour) for every Mint app.
+   ```sh
+   mint-gen --theme nord
+   ```
+
+Other flags: `--archetype` chooses the archetype yourself, `--out DIR` builds somewhere other than `apps/<tool>`, `--force` builds a program the compatibility check refused, `--sudo` / `--no-sudo` answer `--run`'s sudo question in advance, `--root` points at the Mint-Interfaces folder when it isn't found automatically, and `--tui` opens mint-gen's own interface.
+
+**Apps are always built inside Mint-Interfaces.** mint-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then from where the `mint-gen` program itself is (so a link on your `PATH` to a `mint-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `/usr/local/share/mint-interfaces`. If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
+
+`mint-gen --help` is the one guide for Mint-Interfaces. It covers scaffolding and running an app (`mint-gen ps`, `mint-gen --build ps`, `mint-gen --run ps`, and the other flags), then how to use the app: the home menu, setting options and running a command, pane keys (Tab, Shift-Tab, `[`, `]`, `|`, and a click to focus), table keys (left and right to scroll sideways, H and L to narrow or widen a column), Presets, Run History, and Manual / `--man` for the program's full manual. The flag list follows the guide. A generated app's own `--help` stays a short usage list; `--man` still opens that app's Manual screen.
+
+## ~ and $VAR in boxes
+
+Press Enter in a target, path, option or Extra arguments box and Mint rewrites that box. A leading `~` or `~/` becomes your home directory, and `$VAR` and `${VAR}` become the value from the environment. The command preview, the line that runs, and Run History all show that expanded text.
+
+Quoting follows the shell. Inside single quotes nothing changes, so `'~'` and `'$HOME'` stay as typed. Inside double quotes `$VAR` expands and `~` does not. A value that contains a space after expansion is quoted again.
+
+Mint does not start a shell for this. `|`, `;`, `&&`, `$(...)`, backticks and globs stay as characters; nothing is executed and `*` is not expanded. An unset variable is left as you typed it. The row turns red and bold, and its label becomes "<Field label> - File path does not exist!" (for example "Extra arguments - File path does not exist!"). The label is the warning on its own when `NO_COLOR` is set. The same row is used when a path is not on disk: input paths must exist, and output paths (save-to-file, an output flag such as tree's `-o`, or `--output=~/report.txt` in Extra arguments) only need their parent directory. A word that is a flag or a plain pattern is not treated as a path. Edit the box and press Enter again to clear the warning. Values that never went through Enter, such as a preset or an older history entry, are expanded the same way when the command runs.
+
+## Prerequisites
+
+| Component | Minimum | Tested up to | Notes |
+|---|---|---|---|
+| Go | 1.21 | 1.24 / stable | Only to build apps. Standard library only: no outside modules, not even `golang.org/x`. |
+| Operating system | Linux, macOS, the BSDs | — | Windows through WSL only. |
+| Terminal | 256 colours + SGR mouse | — | Any modern terminal. Mint remembers what it learned about yours; re-probe with `mint-gen --probe-term`. |
+| Locale and font | UTF-8; box-drawing glyphs | — | Without a UTF-8 locale, apps draw in ASCII. A font missing the glyphs shows gaps or boxes. |
+| `man` | any | — | mint-gen reads a program's man page as well as its `--help`; without `man` it uses `--help` alone. |
+| Emacs | 27.1 | 30.1 | For `emacs/mint.el`. 31 untested as of v1.0. |
+| vterm (optional) | — | libvterm 0.3.3 | For running apps in `vterm`; see [Running from Emacs](#running-from-emacs-emacsmintel). |
+| Vim | 9.1 | 9.1 | `set ttimeout ttimeoutlen=50`, or Esc waits a second. |
+| Neovim | 0.9.5 | 0.10 | Esc is passed on at once. |
+| tmux | 3.4 | 3.5 | Needs `set -sg escape-time 10` and `set -g mouse on`. |
+| Python 3 (optional) | 3 | — | Only for `tools/check_catalogue.py`. |
+
+The details:
+
+**To run a Mint app:** nothing to install. Apps are single static binaries.
+
+- **Systems:** Linux, macOS and the BSDs. Windows is not supported natively; apps work inside WSL (Windows Subsystem for Linux), for example in Windows Terminal.
+- **Terminal:** any terminal with 256 colours and SGR mouse reporting, which is any modern terminal (GNOME Terminal, Konsole, kitty, Alacritty, iTerm2, Windows Terminal, tmux). 24-bit colour is used only when a theme asks for it and `$COLORTERM` is `truecolor` or `24bit`; if `$COLORTERM` is unset, RGB colours fall back to their nearest 256-colour approximation.
+- **Font:** one with the box-drawing and symbol characters Mint draws (`╭─╮ ━ ● ▸ ◆ ☑ ◉`). Most monospace fonts have them.
+- **Locale:** a UTF-8 locale, which is the default almost everywhere.
+- **Programs the app wraps:** whatever it lists in `Require`. Missing ones are named on its home screen.
+
+**To build apps:**
+
+- **Go 1.21 or newer** (checked: nothing in the code needs a newer Go). No C compiler or other tools: cross-compiling for another system or processor is just a setting.
+- **Python 3**, only for `tools/check_catalogue.py`.
+
+**For the Emacs integration (`emacs/mint.el`):**
+
+- **Emacs 27.1 or newer.** Tested on Emacs 29.3 and 30.1.
+- **Terminal Emacs** (`emacs -nw`) for the recommended handover mode. Graphical Emacs falls back to the built-in `term` mode, with the limits listed under [Limitations in Emacs](#limitations-in-emacs).
+- **Go**, only if you use `M-x mint-run-source` or point `mint-define-app` at an app's source folder rather than a compiled binary.
+- Finding the terminal device for handover uses `/proc` on Linux and `ps` on macOS and the BSDs.
+
+## Build a screen
+
+Import `mint`, describe a home list in a `mint.App`, and call `Run`. A home item's `Open` returns a `*mint.Screen`.
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/CurtisD4q/Mint-Interfaces/mint"
+)
+
+var brightness = 60
+
+func displayScreen() *mint.Screen {
+	return &mint.Screen{
+		Icon:  "▭",
+		Title: "Display",
+		Sections: []mint.Section{
+			{Name: "Brightness", Rows: []mint.Row{
+				mint.Note("How bright the panel should look."),
+				mint.Slider(mint.SliderOpts{
+					Label: "Adjust",
+					Get:   func() int { return brightness },
+					Set:   func(v int) { brightness = v },
+				}),
+				mint.Value(mint.ValueOpts{
+					Label: "Level",
+					Get:   func() string { return fmt.Sprintf("%d  (default 60)", brightness) },
+				}),
+				mint.Action(mint.ActionOpts{
+					Label:      "Reset to default",
+					Hint:       "reset",
+					OnActivate: func(*mint.Ctx) { brightness = 60 },
+				}),
+			}},
+		},
+	}
+}
+
+func main() {
+	app := &mint.App{
+		Title: "◈ Example",
+		Crumb: "Example", // breadcrumb shown on inner screens
+		Note:  "Optional line under the home title.",
+		Items: []mint.HomeItem{
+			{Icon: "▭", Label: "Display", Desc: "Brightness", Open: displayScreen},
+		},
+	}
+	app.Run()
+}
+```
+
+`Sections` is a list of `{Name, Rows}`. The heading style the settings manager uses (`┄ Heading`) is drawn for you. Returning a screen from `Open` pushes it, `b` pops it, and `q` quits.
+
+Mint adds a **Theme** item at the end of every home list, where the person running the app chooses its colours (see [Colour](#colour)). Set `NoThemeItem: true` on the `App` to leave it out; an app with its own item called "Theme" keeps its own.
+
+From a row callback, `ctx` can open another screen or a dialog:
+
+```go
+mint.Action(mint.ActionOpts{
+	Label: "Rename",
+	Hint:  "edit",
+	OnActivate: func(ctx *mint.Ctx) {
+		name, ok := ctx.Prompt("Name", "Shown in the title.", "untitled")
+		if ok && ctx.Confirm("Use this name?", name) {
+			ctx.Push(otherScreen(name))
+		}
+	},
+})
+```
+
+Dialogs: `ctx.Confirm`, `ctx.Message`, `ctx.Prompt`, `ctx.Choose`, `ctx.ChooseItem`, `ctx.Password` and `ctx.TypeToConfirm`. They use the same frame. `ctx.Push`, `ctx.Pop` and `ctx.Quit` change screens.
+
+### Row types
+
+| Constructor | What it draws | Keys |
+|---|---|---|
+| `mint.Value(mint.ValueOpts{Label, Value})` or `Get` | Label on the left, muted value on the right | Enter runs `OnActivate` when set |
+| `mint.Slider(mint.SliderOpts{Label, Get, Set})` | `━━━━●──── 60%`, range 0–100 unless set (see [More controls](#more-controls)) | ←→ by `Step` (default 5), click the track to jump |
+| `mint.Picker(mint.PickerOpts{Label, Options, Get, Set})` | `‹ value ›` | ←→ cycles, Enter steps forward |
+| `mint.Toggle(mint.ToggleOpts{Label, Get, Set})` | `● ON` or `OFF` | Space flips, → on, ← off |
+| `mint.Action(mint.ActionOpts{Label, Hint, OnActivate})` | Hint on the right (`reset`, `save`, `open`) | Enter or double-click runs it |
+| `mint.Text(mint.TextOpts{Label, Get, Set, Placeholder})` | Editable value | Enter edits, Enter saves, Esc cancels |
+| `mint.Note("…")` | Dim line, not selectable | |
+| `mint.Heading("…")` | Section header inside a row list | |
+| `mint.Progress(mint.ProgressOpts{Label, Get})` | `━━━━━─────── 42%`, read-only | not selectable |
+| `mint.Stepper(mint.StepperOpts{Label, Get, Set, Min, Max, Step})` | `− 8 +` | ←→ step, Enter types a number, click − or + |
+| `mint.Checkbox(mint.CheckboxOpts{Label, Get, Set})` | `☑ Label` or `☐ Label` | Space flips, → on, ← off, click the box |
+| `mint.Radio(mint.RadioOpts{Label, Options, Get, Set})` | one `◉`/`○` row per option | Space, Enter or → chooses, click the circle |
+| `mint.Label(style, "…")` | Wrapped text in an emphasis style | not selectable |
+| `mint.Divider()` / `mint.Divider("-")` | A line across the content | not selectable |
+| `mint.Spacer()` | A blank line | not selectable |
+
+`Get` and `Set` are ordinary functions. A slider's `Get` returns `0`–`100`. A picker's `Set` receives the next option string. Pass `Options` (or `OptionsFunc` for a list that changes), or leave them out and handle the raw `-1` / `0` / `1` direction yourself in `Step`. Every row also takes an optional `ID`.
+
+If a `Get` panics, the row shows the message in amber, or the last good value if there was one. Panics in `Set`, `OnActivate`, `Enter` and `Poll` are recovered, so they never crash the app.
+
+Override the footer with `Hints` on a screen, or `ScreenHints` on the app. The defaults match the settings manager: `↑↓ move ⏎ open q quit` on the home list, and `↑↓ move ←→/Space change b home q quit` on a screen. With the emacs or vim [key profile](#keys) they show that profile's keys instead, unless the app has set its own. They are also exported as `mint.HomeHints`, `mint.ScreenHints` and `mint.EditHints`.
+
+### Live screens
+
+`Refresh(screen)` runs before each draw and may replace `screen.Sections`. If it panics, the error appears in the screen's `Banner`. `Poll(screen)` runs on idle (about ten times a second) and should return `true` when the next frame must be painted. Keep `Poll` non-blocking: do the slow work in another process or goroutine, and only read a file or a variable here. `eventcache` is the same pattern the settings manager uses for background streams: start a command, watch its output, and mark slices dirty.
+
+`Enter(screen)` runs once each time the screen is shown.
+
+### Colour
+
+#### Themes
+
+There are seven themes. A theme colours the frame, titles, selection and status colours, and the lines that divide the title, the panes, the run bar and the footer (drawn in the theme's accent, dimmed):
+
+| Theme | Look |
+|---|---|
+| `default` | Mint's purple (256-colour 141 for the frame and titles), with light grey text |
+| `terminal` | your terminal's own 16 colours, so it follows the terminal's colour scheme |
+| `nord` | cool, frosty blues |
+| `gruvbox` | warm and retro, with cream text |
+| `dracula` | dark purple with a pink highlight |
+| `catppuccin` | soft pastels |
+| `custom` | your own RGB colours, from `theme.conf` (below) |
+
+#### Choosing a theme
+
+- **For every app, from mint-gen.** `mint-gen --theme NAME` saves the theme for every Mint app, for example `mint-gen --theme nord`. It writes `theme.conf` (below), the same as the Theme screen's **Use this theme**, and builds nothing. Apps that are open use it when they next start. It can go with another command too: `mint-gen --theme nord --build nmap` saves the theme, then builds nmap as usual.
+- **The Theme screen.** Every app's home list ends with **Theme**. Choosing a theme shows it straight away; **Use this theme** saves it for every Mint app, and leaving without saving (or **Undo preview**) puts the old colours back. An app can leave the item out with `App.NoThemeItem`.
+- **For one run.** Start any app with `--theme NAME` (or `--theme=NAME`), for example `nmap-mint --theme dracula`. Nothing is saved. It can come before Mint's other flags: `nmap-mint --theme nord --screen Run`.
+
+Only the seven names above are accepted; any other name is refused with the list.
+
+There is one saved theme, shared by every Mint app. Which theme an app uses, strongest first:
+
+1. `--theme NAME` on the app's command line (that run only)
+2. the theme saved in `theme.conf`, by `mint-gen --theme`, the Theme screen or by hand
+3. `default`, when nothing is saved
+
+`MINT_PALETTE` (below) is applied on top of the theme the file picks. Inside Emacs, `mint.el` passes the Emacs theme's colours this way, so apps it launches match Emacs rather than the saved theme; set `mint-match-theme` to `nil` to use the saved theme there too.
+
+#### The theme file
+
+The saved theme lives in `~/.config/mint-interfaces/theme.conf` (`$XDG_CONFIG_HOME/mint-interfaces/theme.conf` when that is set), the same file mint-interfaces-legacy reads, so both share a theme. Apps read it when they start, so restart an app after editing it.
+
+```
+theme = nord
+```
+
+Case, quotes and a colon don't matter: `Theme = Nord`, `theme = "nord"`, `theme: nord` and a line that is just `nord` all work. A name Mint doesn't have (`theme = solarized`) falls back to `default`, and the Theme screen's banner says so.
+
+For your own colours, set `theme = custom` and give each role an RGB value from 0 to 255. A role left out uses a built-in colour.
+
+```
+theme = custom
+
+accent = 124 58 237
+bright = 167 139 250
+text   = 229 229 229
+muted  = 150 150 150
+on     = 52 211 153
+amber  = 251 191 36
+selbg  = 60 60 70
+err    = 220 90 90
+```
+
+**Under sudo.** Run as root, `~` is `/root`, so an app looks for `/root/.config/mint-interfaces/theme.conf`. When root has no theme file of its own, Mint uses the theme file of the user who ran `sudo` (`SUDO_USER`). That file is only read, never written: saving a theme as root (`sudo mint-gen --theme nord`, or the Theme screen in an app run with sudo) writes root's own file, and mint-gen says so. To set your own theme, run `mint-gen --theme` without sudo. It is used only when it is a regular file (not a link) owned by that user or by root, and at most 64 KiB of it is read.
+
+#### Terminals, MINT_PALETTE and program colours
+
+Truecolor (`CSI 38;2;r;g;b m` / `CSI 48;2;r;g;b m`) is gated on both the theme and the terminal: it is emitted only when a theme (or `MINT_PALETTE`) specifies RGB values **and** `$COLORTERM` is `truecolor` or `24bit`. When `$COLORTERM` is unset, any RGB colour falls back to the nearest 256-colour approximation (`CSI 38;5;n m` / `CSI 48;5;n m`). On a 16-colour terminal the `default` theme's 256-colour codes are mapped to the nearest of the 16. `NO_COLOR` (or a monochrome `$TERM`) turns colour off, and emphasis becomes bold or reverse.
+
+The `MINT_PALETTE` environment variable overrides individual colours for one run, for example `MINT_PALETTE="accent=#ff5f87,selbg=236"`. Each value is a `#rrggbb` colour or a 256-colour number, and the roles are `accent`, `bright`, `text`, `muted`, `on`, `amber`, `err` and `selbg`. This is how Emacs passes its theme to the apps it launches.
+
+A program's own colours (fastfetch's logo, `grep --color`) are shown in the output box and the full-screen viewer, safely: Mint reads only the colour codes, maps them to the 16 standard colours, and writes its own codes. Nothing the program sent reaches the terminal.
+
+#### In code
+
+`mint.SetPalette(theme.Load(name))` applies a theme immediately; `theme.Set(name)` saves it to `theme.conf`; `theme.Current()` is the saved one, and `theme.Problem()` says what is wrong with the file, if anything.
+
+### Layout of the library
+
+```
+mint/doc.go                    package docs
+mint/home.go                   App, the home list, the screen stack, flags
+mint/screen.go                 Screen, Ctx, row widgets, editing, mouse
+mint/rows.go                   row constructors
+mint/dialogs.go                confirm, message, choose, prompt, password
+mint/footer.go                 status badges, toasts, the loading spinner
+mint/log.go                    the output view and full-screen viewer
+mint/keys.go                   key profiles (default, emacs, vim)
+mint/render.go                 palette, frame, title, footer, scrollbar, wrapping
+mint/split.go, split_layout.go panes stacked on one screen, with Tab, [ ] and | keys
+mint/styled.go                 text coloured by role, never by escape sequences
+mint/colour.go                 a program's own colours, kept safely
+mint/themescreen.go            the Theme item and the --theme flag
+mint/term.go                   raw mode, terminal size, key and mouse decoding
+mint/runtime.go                what the terminal can do, cached in termcaps.json
+mint/term_linux.go, term_bsd.go    the termios ioctls per platform
+mint/theme/                    themes, the theme file and MINT_PALETTE
+mint/util/                     quoting, process spawn, JSON, width helpers
+mint/secure/                   secure store for passwords and keys while an app runs
+mint/runner/                   background jobs, JobScreen
+mint/eventcache/               values refreshed by a stream of events
+mint/collapsible.go            inline foldable sections and large-text chunking
+mint/table.go                  aligned multi-column tables and CLI table parser
+mint/appkit/                   turnkey CLI wrapper: 38 archetypes, one main screen, home items
+mint/diff/, findings/, fileplan/, follow/, transcript/, reorder/, procnet/
+                               what the add-ons read: diff output, audit reports, what rm/cp/mv
+                               would do, a growing log, an interactive session, rule order,
+                               the sockets a server listens on
+templates/app/                 starter for a new interface (main.go, cli.go, app.el)
+templates/config/, runner/, scanner/, monitor/, explorer/, suite/
+                               appkit starters for common archetypes (templates/README.md)
+tools/mint-gen/                man-page & --help interface generator + TUI exclusion checker
+emacs/mint.el                  launching apps from Emacs
+emacs/mint-tests.el            tests for mint.el
+CATALOGUE.md                   how to build an interface for a program
+tools/check_catalogue.py       compiles every catalogue example
+tools/build.sh                 builds a standalone static binary (also for apps with their own go.mod)
+```
+
+`mint/util` is there so apps can shell out safely and encode JSON without another dependency. `util.Run(program, args...)` passes each argument as data, so no shell ever parses it. `util.RunTimeout(limit, program, args...)` does the same with a time limit, detached from the terminal; `util.StopAll()` ends any still running when the app closes. It is not a settings backend.
+
+## Additions
+
+All of them are off unless you use them, so existing screens look exactly as before. `examples/features` shows every one.
+
+### Dividers, spacing and text styles
+
+`mint.Divider()` draws a dim line across the content area. Pass another character for a different line: `mint.Divider("-")` gives `-----`, and `mint.Divider("┄")` a dotted rule. `mint.Spacer()` is one blank line.
+
+For a gap between every section, set `SectionSpacing` on the `App` (it applies to every screen) or on a single `Screen`. The value is the number of blank lines, and a negative value turns it off for one screen.
+
+A terminal can't change font size, so `mint.Label` gives text a hierarchy through colour and weight instead. Labels wrap across as many lines as they need.
+
+| Style | Looks like |
+|---|---|
+| `mint.StyleTitle` | accent colour, bold |
+| `mint.StyleHeading` | bright, bold |
+| `mint.StyleBody` | normal text |
+| `mint.StyleCaption` | muted |
+| `mint.StyleItalic` | italic |
+| `mint.StyleUnderline` | underlined |
+
+### Collapsible sections
+
+Set `Collapsible: true` on a `Section`. Its heading becomes `▾ Name`, and the cursor can stop on it. Enter, Space or a click on the arrow folds the section away to `▸ Name` with a count such as `3 hidden` on the right. → always expands and ← always collapses. `Collapsed: true` makes a section start folded. After that, the screen remembers what the user chose, even when `Refresh` rebuilds the sections.
+
+```go
+{Name: "Advanced", Collapsible: true, Collapsed: true, Rows: []mint.Row{...}}
+```
+
+### More controls
+
+**Sliders** take a range, a step and a unit. With none of them set, a slider behaves exactly as before (0–100, steps of 5, shown as a percentage).
+
+```go
+mint.Slider(mint.SliderOpts{Label: "Gain", Min: -24, Max: 12, Step: 3, Unit: "dB", Get: get, Set: set})
+// ━━━━━━●────── -6 dB
+```
+
+`Format` gives you full control of the number, which is how to show decimals: store tenths as an `int` and format them.
+
+```go
+Format: func(v int) string { return fmt.Sprintf("%.1f GHz", float64(v)/10) }
+```
+
+**Progress bars** are read-only and use the same style as sliders: `mint.Progress(mint.ProgressOpts{Label: "Download", Get: percent})`. Return `true` from the screen's `Poll` while the work runs so the bar repaints.
+
+**Steppers** are for exact whole numbers: `− 8 +`. ←→ change the value by `Step` (default 1), and clicking `−` or `+` does the same. Enter lets you type a value; only digits and a leading minus sign are accepted, and the result is clamped to `Min`–`Max`. Leave `Min` and `Max` at zero for no limits. At a limit, that end's `−` or `+` turns dim.
+
+**Checkboxes** (`☑`/`☐`) are independent on/off rows; use several for a multi-select list. A **radio group** expands into one row per option (`◉` chosen, `○` not), with an optional caption above them. For both, clicking the box or circle acts immediately, and double-clicking anywhere on the row does too.
+
+### Footer feedback
+
+The left side of the footer is used for, in order of priority: a loading spinner, then a toast, then status badges. Whatever doesn't fit beside the key hints is left out.
+
+**Loading spinner.** When a home item's `Open` or a screen's `Enter` takes longer than 150 ms, the footer shows `⠙ Loading Display…` until it finishes. Faster page changes show nothing, so there's no flicker. From a row callback, use:
+
+```go
+ctx.Open("Diagnostics", func() *mint.Screen { return buildSlowScreen() }) // spinner, then push
+ok := ctx.Busy("Saving…", func() { save() })                            // spinner for any slow work
+```
+
+The function you pass runs on a background goroutine while the spinner animates, so it must not open dialogs. Keys pressed during loading are ignored. If the function panics, the panic message appears as an error toast. Tune the delay with `mint.LoadingDelay`.
+
+**Toasts** flash a short message for two seconds (`mint.ToastDuration`): `ctx.Toast("Saved")` shows `✓ Saved`, `ctx.ToastWarn(...)` shows an amber `!`, and `ctx.ToastError(...)` a red `✕`. `mint.Toast` and its siblings are safe to call from any goroutine.
+
+**Status badges** are short live indicators such as `● running` or `○ v2.1`. Return them from `App.Status`, which covers the home list and every screen, or from `Screen.Status`, which overrides it for that screen.
+
+```go
+Status: func() []mint.Badge {
+	if running {
+		return []mint.Badge{{Text: "service running", Kind: mint.BadgeOK}}
+	}
+	return []mint.Badge{{Text: "service stopped", Kind: mint.BadgeError}}
+},
+```
+
+The kinds are `BadgeOK` (green), `BadgeWarn` (amber), `BadgeError` (red), `BadgeInfo` (accent) and `BadgeIdle` (muted `○`). The footer checks for changes about ten times a second and repaints only when a badge changes, so keep `Status` cheap: read a variable rather than running a command. Themes now include an optional red `Err` colour role; palettes without one use amber for errors.
+
+### Running programs in the background
+
+`mint/runner` runs a command-line program without freezing the interface. It captures the output line by line, tracks progress, state and elapsed time, and stops cleanly.
+
+```go
+job := runner.Start(runner.Cmd{
+	Name:     "rsync",
+	Args:     []string{"-a", "--info=progress2", src, dst},
+	Progress: runner.Percent, // reads "45%" from the output
+	Timeout:  time.Hour,
+})
+ctx.Push(runner.JobScreen("Sync", job)) // ready-made page: Stop, progress bar, live output, state in the footer
+```
+
+Or wire the pieces into your own screen:
+
+```go
+mint.Progress(mint.ProgressOpts{Label: "Copying", Get: job.Percent}),
+mint.Log(mint.LogOpts{Label: "Output", Lines: job.Lines, Height: 8}),
+Poll:   func(*mint.Screen) bool { return job.Changed() },
+Status: job.Badges, // ● rsync 45% · 0:42 → ● rsync done in 1:03 / failed (exit 23) / stopped
+```
+
+What the runner takes care of:
+
+- **Stopping everything.** `job.Stop()` and `Timeout` end the program *and every process it started*: SIGTERM first (or `Cmd.StopSignal`, such as `syscall.SIGINT` for programs that only clean up on Ctrl+C), then SIGKILL three seconds later for anything still alive. Call `runner.StopAll()` after `app.Run()` so nothing outlives the interface.
+- **Progress lines that redraw in place.** Programs like curl and rsync rewrite one line with a carriage return. The runner keeps that as a single updating line, shows each update immediately, and removes every control character. A program's colours are kept safely: the runner records them as colour runs (`LogLine.Colours`) and Mint redraws them with its own codes (see [Colour](#colour)).
+- **No terminal access.** Each job runs detached from the terminal, so it can never read the keyboard or draw over the interface. A program that insists on asking a question fails, rather than hanging the screen. Answer prompts with `Cmd.Input: true` and `job.SendLine(...)`, which is also how to pass a password (for example to a `--password-stdin` option) without it appearing on the command line.
+- **Bounded memory.** It keeps the newest 50,000 lines (`MaxLines`, configurable per `Cmd`), with `Job.TailLines(n)` and `Job.Slice(start, count)` for windowed inspection.
+- **Results.** `job.Output()` returns stdout once the job is done; `job.State()`, `ExitCode()`, `Err()` and `Elapsed()` describe how it ended; `OnExit` runs when it finishes (toasts are safe from there).
+
+`runner.Percent` and `runner.Fraction` (`12/80`, `3 of 7`) cover most progress formats; any `func(line string) (int, bool)` works.
+
+**The output view.** `mint.Log` shows the newest lines in a fixed-height box under a heading row such as `Output  128 lines · view`. Enter or a double-click on the heading opens the full output in a viewer that keeps following new lines until you scroll up. Errors are shown in amber. The viewer is also available directly as `mint.ViewLog(title, lines)` or `mint.ViewLogWith(mint.ViewLogOpts{...})` and supports horizontal panning (`←`/`→`, `0` to reset), case-insensitive search (`/`, `n`, `N`), and saving the full output to a named file (`s`). `mint.CleanLine` also resolves backspace overstrikes (`\b`) from `man` pages while preserving single-width Unicode box-drawing and Braille characters.
+
+**Slow work without a ctx.** `mint.Busy("Applying…", fn)` is `ctx.Busy` for code that has no `ctx`, such as a row's `Set`.
+
+### Building an interface for a program
+
+`CATALOGUE.md` is the guide for wrapping a command-line program. It covers how to read a program's help, the five common program shapes (settings, job, monitor, multi-command, lookup), which component fits each kind of option, and the rules every interface follows, such as never running a command inside a row's `Get` and sending secrets through standard input. `templates/app` is the starter every new interface copies.
+
+Every code example in the catalogue compiles. Check them after changing the library with:
+
+```
+python3 tools/check_catalogue.py
+```
+
+### Inline collapsible sections, large text, and formatted tables
+
+- **`mint.Collapsible` and `mint.CollapsibleText`**: place foldable groups (`▸ Title` / `▾ Title`) directly inside any `Section.Rows` slice. When `Lines` and `ChunkSize` are set, massive text outputs automatically split into nested collapsible chunks (`Lines 1–100`, `Lines 101–200`, …) alongside an action to open the full text in `mint.ViewLog`.
+- **`mint.Table` and `mint.ParseTable` (`mint.ParseColumns`)**: format multi-column data into aligned, selectable Mint rows, or parse whitespace-, tab-, pipe-, and box-drawing-aligned CLI tables (`ps`, `df`, `ss`, `ls -l`, `nmap`) automatically.
+
+### Turnkey CLI apps (`mint/appkit`) and automated scaffolding (`tools/mint-gen`)
+
+`mint/appkit` provides a declarative runtime built on **38 archetypes** (what kind of program a tool is) and **composable add-ons** (see [`templates/README.md`](templates/README.md)):
+
+- **38 archetypes** (`appkit.AllArchetypeDefs`, listed by `mint-gen --list-archetypes`): Ask, Look up, Inspect, List, Search, Query, Compare, Read, Watch, Follow, Record, Record sound, Probe, Audit, Measure, Convert, Filter, Pack, Generate, Build, Transfer, Present, Edit files, Mirror, Settings, Device, Rules, Control, Signal, Records, History, Backup, Toolkit, Wrap, Schedule, Serve, Session and General. Each says what a program takes, how it runs and what it shows, and wants add-ons by weight (0 to 1). Its blueprint is every add-on wanted at 0.5 or more. The weights are there so a design style can later be blended in. `MainScreen` builds one screen from that blueprint: the input (a target, two inputs, or subcommand tabs), the run (once, a live poll, or a state editor), and the result. The older 28 templates (`T01`–`T28`) are gone; a spec that still names one (`Template:`) no longer builds and needs an `ArchetypeID`.
+- **Composable Mixins** (15; `go run ./tools/mint-gen --list-archetypes` lists them):
+  - The original 8: `WithFileOutput`, `WithTableOutput`, `WithCollapsibleOutput`, `WithProfiles`, `WithDynamicChoices`, `WithRootAuth`, `WithConfirm`, and `WithHistory`.
+  - 7 more, switched on when the program's own details are known: `WithDiff` (Compare: `diff`, `cmp`), `WithFindings` (Audit: `shellcheck`, `lynis`, SARIF), `WithPreview` (Edit files: `rm`, `cp`, `mv`, `rsync`), `WithFollow` (Follow: `tail -F`, `journalctl -f`), `WithService` (Serve: `python -m http.server`, `nc -l`), `WithTranscript` (Session: `psql`, `sqlite3`, `gdb`, `redis-cli`) and `WithReorder` (Rules: `iptables`, `nft`, `ufw`, `ip rule`). mint-gen attaches the ones that are safe to offer by itself; [`CATALOGUE.md`](CATALOGUE.md) Part E describes each.
+
+`tools/mint-gen` checks whether a command can run inside a pure detached TUI, detects any CLI tool's archetype, and scaffolds a complete `apps/<tool>/` module (`go.mod`, `main.go`, `spec.go`, and `<tool>-mint.el`) from its `man` page and `--help` output.
+
+#### Step-by-step: generating and running a Mint interface for any installed CLI program
+
+1. **Check compatibility (optional)**
+   Verify that the program is installed and works inside a pure detached TUI (this also probes and caches your terminal's capability profile in `~/.config/mint-interfaces/termcaps.json` on first run; pass `--probe-term` anytime to force a fresh probe):
+   ```bash
+   go run ./tools/mint-gen --check nmap
+   ```
+   *(You can also run `go run ./tools/mint-gen --list-archetypes` to see the 38 archetypes and the add-ons.)*
+
+2. **Generate and compile the interface in one command**
+   Run `mint-gen` with `--build` (or pass `--archetype probe` to choose the archetype yourself):
+   ```bash
+   go run ./tools/mint-gen --build nmap
+   ```
+   Behind the scenes, this automatically:
+   - Ensures your terminal capability profile is cached in `~/.config/mint-interfaces/termcaps.json` (keyed by `$TERM`, `$TERM_PROGRAM`, and `$TMUX`).
+   - Reads `man nmap` and `nmap --help` to extract its summary, synopsis, target input, file-output flags (`-oN`, `-oX`, `-o`, etc.), subcommands, and option flags.
+   - Recognises what kind of program it is (for `nmap`, the **Probe** archetype: many targets, one result row each, with a results table, profiles, file output and history). A program on the archetype lists gets its listed archetype. Any other gets the archetype its behaviour and words point to: what its usage takes (`HOST...`, `PATTERN`, `FILE1 FILE2`, `COMMAND [ARG]...`, an interval), what its subcommands are called (install/remove, commit/log, start/stop), options such as `--follow` or `--listen`, and each archetype's phrases in its summary, description, usage and help. Clues and phrases alike count by where they were found: usage 30, summary 25, description 20, name 15, the rest of the help 10. It always gets one, marked as a clear choice or a close call; for a close call the build output names the likely alternatives and the `--archetype` command to switch. Measured blind (with the archetype lists switched off): on 153 installed programs never used for tuning (119 everyday ones and 34 for archetypes the other sets lacked), it chooses the right archetype for 114 (75%); 78% are marked clear choices, and those are right about 4 times in 5. On the 353 programs used for tuning it gets 280 right (79%), up from 274 before Signal, Record sound and Backup were split out and close List/Inspect calls were settled by table options (`MINT_ARCHETYPE_BENCH=final go test -run TestArchetypeBenchmark -v ./tools/mint-gen`).
+   - Maps every flag to the right Mint control (`Checkbox`, `Stepper`, `Select`, `Text`, or interactive path/repeatable browsers) and folds advanced flags into collapsible **More Options** and "(Advanced)" sections.
+   - Reads what the help shows about how the program behaves. A program that draws its own full-screen interface (`htop`, `less`) is refused, unless it has a batch mode that prints plain text and exits: then the app runs it that way (`top -b -n 1` as a live view refreshed on a timer, `lynx -dump` once). A full-screen program built anyway with `--force` shows its command to run in a terminal instead of running it. A summary that says the program changes things (installs, removes, configures, kills processes…) makes the app ask before every run, and so do options that act on running processes by ID (`--pid` with `--signal`, `--priority` or `--class`), whatever the archetype.
+   - Generates a self-contained folder at `apps/nmap/` (`go.mod`, `main.go`, `spec.go`, and `nmap-mint.el`) and compiles the static binary at `apps/nmap/nmap-mint` via `tools/build.sh`.
+
+3. **Run your new interface immediately**
+   Launch the compiled binary directly in your terminal (or load `apps/nmap/nmap-mint.el` and run `M-x nmap-mint` in Emacs):
+   ```bash
+   ./apps/nmap/nmap-mint
+   ```
+   The home list starts with the archetype's main item (for nmap, **Probe**; otherwise named for how the tool runs: once, as a live view, as a state editor, or as a set of commands), then any items the tool adds (Status, Actions, one per subcommand), **Presets** and **Manual**, items for the add-ons (Findings, Compare, Rule order, Server, Live log), **Live Run & Output**, the **Output Directory** when the tool saves files, **Run History**, and **Theme**.
+
+   The main screen is stacked panes. **Basic Options** starts with the **Extra arguments** box, then the target and the everyday options. A tool with more than 10 advanced options gets a second pane, **Advanced + Additional**, with them; a simpler tool keeps its few advanced options in Basic Options. Then come any panes with their own job (**Findings** for an audit, **What will change** for a mirror or file edit), then **Output**: progress, a live parsed `mint.Table`, collapsible large-text chunks, and the full-screen viewer with `←`/`→` horizontal pan, `/` search and `s` save. The run section (the command preview and the Run, Apply or Poll now button) is always the bottom pane, pinned under Output, in every app and at every terminal height: on a short terminal the panes above shrink first. Tab and Shift-Tab move between panes, `[` and `]` resize the focused one, and `|` hides it.
+
+### Icons
+
+The library counts every character as one column, as the original does. Emoji such as `⚡` take two columns in most terminals and push the right border out of line, so use single-width symbols like `◆ ▤ ◧ ◷ ≡` for icons.
+
+## Security
+
+Generated interfaces are built to keep passwords, tokens and keys away from other users on the computer, off the disk and off the screen, and to stop commands that change or destroy things from running by accident. The rules below apply to every app built with `appkit` and `mint-gen`. The secure store underneath them can also be used on its own.
+
+### Safety rules every generated interface follows
+
+- **Nothing runs unless you ask, except commands that only read.** A monitor polls, and a settings screen shows "Refresh live state", only when the tool has a read-only way to show its state: `StatusArgs` (for example `systemctl list-units`, `ufw status`, `sysctl -a`), or a tool that only reports (`ReadOnly`, such as `ps`, `df` or `journalctl`). Common tools get these automatically. For anything else, such as `pkill` or `kill`, the monitor becomes an ordinary screen with a Run action and the usual confirmations.
+- **Commands appkit runs itself have time limits and run in the background.** Polling never freezes the screen (a `tail -f` that never ends is stopped after 15 seconds), row actions and refreshes show the loading spinner, and anything still running when the app closes is stopped.
+- **Tools that change things ask first.** A tool whose help says it changes things (installs, removes, configures, kills processes, starts and stops services…), or whose options act on running processes by ID, asks before every run whatever its archetype, and is not treated as read-only unless it is on Mint's checked list of read-only tools.
+- **Irreversible tools need the target typed to confirm.** `dd`, `shred`, `rm`, `wipefs`, `mkfs.*`, `kill`, `pkill`, `killall` and similar are marked `Irreversible`.
+- **Secrets stay secret.** Options whose value is a password, token or key are `FlagSecret`: asked for with a password dialog, kept for the session only (never in settings, presets or history), and masked in the command preview. Each secret takes the safest route the tool offers: standard input for a `--password-stdin` style option (never visible), then an environment variable such as `RESTIC_PASSWORD`, `PGPASSWORD` or `GH_TOKEN` (only you and root can read a program's environment), and only as a last resort the command line, where other users can see it with `ps`; then the app says so and asks before running. Environment variables come from a built-in list of well-known tools (restic, borg, kopia, duplicity, rclone, psql and the pg_ tools, gh, glab, sshpass) and from the man page's ENVIRONMENT section. Settings and history files are readable only by you.
+- **Secrets are hidden in the output.** Every secret a run uses, and any typed into a text box, is replaced by `••••••` in the program's output before it is shown, saved or used in a message. So are well-known token formats (GitHub, GitLab, AWS, Slack, Google, `sk-…` keys, private keys), `Authorization:` and API-key header values (such as the `Basic` header `curl -v` prints), and passwords in URLs. Mint keeps only a salted fingerprint of each secret for this, not the secret itself. Secrets shorter than 4 characters are not hidden, since they would blank out ordinary words. A file the program writes itself (through its own output option) is not changed.
+- **Sensitive results are kept private.** Each tool has a data level, shown as a badge: *sensitive* for packet captures, logs, security audits, database dumps and tracers, and *secret* for password managers and key and crypto tools. The level comes from the tool, its archetype (Look up, Follow, Record, Record sound, Audit and Backup are sensitive), what its help is about (keys and passwords make it secret; captured traffic, people and organisations, security findings and logs make it sensitive; this only ever raises a level, and a topic counts only when it clearly leads the other subjects of the help), or `ToolSpec.Data`. Options that print secrets (`--export-secret-keys`, `-d` "Decrypt data", `--show-password`) make a run secret, and so does output that contained a private key, a login token (JWT), a password hash or another recognised secret. For sensitive results, new results folders are private (0700), and so is the app's own folder once sensitive results are saved in it and result files, including ones the tool writes itself, are readable only by you. Secret tools keep results in a private in-memory folder by default ("Keep results in memory only"): `$XDG_RUNTIME_DIR`, cleared at logout, or `/dev/shm`, cleared at restart. "Encrypt the output" seals the output file (or the captured output) with a passphrase and removes the original. The Output Directory opens sealed files after asking for the passphrase, decrypted in memory only. `mint-gen`'s safety report shows the level and the revealing options.
+- **Passwords typed into text boxes are caught.** Before a run, the Extra arguments and Target boxes are checked for passwords in URLs (`https://user:pass@host`), `--password=…` / `--token …` style options, the tool's own secret options typed by hand, `--user name:pass`, `Authorization:` and API-key headers, `PASSWORD=…` assignments and well-known token formats. If one is found, the app explains that it will be visible on the command line, points to the tool's own secret option if there is one, and asks before running. Such values are hidden in the command preview, settings and history and are never written to disk; in the next session the box shows `••••••` and the app asks you to type it again rather than running with it.
+- **Mint never asks for your sudo password.** A tool that needs root runs when the whole app is started with sudo (`sudo apps/tcpdump/tcpdump`), so the password goes to sudo's own prompt before Mint starts. `mint-gen --run` asks "Start it with sudo? [y/N]" for tools that usually need root (answer in advance with `--sudo` or `--no-sudo`). The app's "Root access" section shows whether it runs as root and, if not, the exact command to restart it with sudo; when a run fails with "permission denied" or similar, the app says the same. Started with sudo, the app still keeps its settings, history and results in your home and makes them belong to you, not to root.
+- **`mint-gen` reads a program's help without trusting it.** To learn a program's options it runs `man` and the program's `--help` (or `-h`), plus fuller help such as curl's `--help all` or the `dig -h` that dig's `--help` points to, but only when the program's own help mentions it, only with help arguments from a fixed list, and at most six runs in all. Each run is passed as a list of arguments (never through a shell), in its own session with no terminal and input closed, inside an empty temporary folder that is also its `HOME`, with a cleaned environment (your tokens and passwords are not passed on), a 5-second limit and a 2 MB output cap. Anything it leaves running afterwards is stopped. It never runs as root: under sudo it runs as you, and as plain root it runs as `nobody`.
+- **The app writes only where mint-gen is sure.** For each tool, mint-gen works out what it reads and writes, from three sources: the options' descriptions, its usage line, and the known-tools list. "Save output to file" then works one of three ways. The tool may write the file itself through its output option (`curl -o`) or as its last argument (`ffmpeg … out.mkv`). Otherwise Mint saves what the tool prints. A path is only passed to an option or argument when that's certain: a listed option, a clearly described one, or an output argument confirmed by the known-tools list. Anything unclear is shown as a path the app never writes to. For tools that only print progress messages (gzip, tar, ffmpeg), saving those messages is labelled as such and off by default. The output file's extension comes from the known-tools list, a format named in the output option's description, or the archetype. Text that Mint saves is never given a binary extension like `.pcap`. When you choose an output format in the app (pandoc `-t docx`, a `--json` switch, or the same typed into Extra arguments), the automatically named file follows it (`.docx`). A file name you type yourself is never changed, and only extensions from a fixed list are used. `mint-gen --explain <program>` shows every decision and its reason. On a benchmark of 151 programs, no app passes its output file to the wrong option or argument, with or without the known-tools list (`MINT_IO_BENCH=1 go test -run TestIOBenchmark -v ./tools/mint-gen`).
+- **Facts about tools you add are checked before use.** mint-gen has a built-in list of what common tools read and write (tcpdump's `-w` capture file, nmap's `-oN`/`-oX`/`-oA` outputs, wget's log options…). You can add or correct entries in JSON files in `~/.config/mint-interfaces/tools.d/` or `/etc/mint-interfaces/tools.d/`. Such a file is read only if it and every folder above it belong to you or root and nobody else can change them, and only if it isn't a link and is under 256 KB. Its content must have exactly the expected shape, with option names, extensions and roles checked. Any problem is reported with `--check` and the file or entry is skipped. The files can describe options only; they can't change any safety setting.
+- **`mint-gen` only touches folders it created.** It refuses to scaffold into a folder that already has other files, and `--remove` and `--purge` delete only the files it generated (listed in the folder's `.mint-gen` file), leaving anything else in place. `--purge` names the folders in `apps/` that mint-gen did not create and leaves them alone, and never follows a link. Options may come before or after the program name.
+- **Check before you build.** `mint-gen --check <program>`, the summary after scaffolding, and the Safety section of `mint-gen --tui` all show a safety report: when the tool will run (automatically, only when asked, or only after the target is typed), each secret option and how its value is passed (standard input, which no one else can see; an environment variable, which only you and root can see, and whether it came from the built-in list or the man page; or the command line, which other users can see with `ps`), and the options that look destructive (`--force`, `--delete`, `-f` "never prompt"…). For example:
+
+  ```
+  Safety:
+    Running:     destroys data or processes: runs only when asked, and the target must be typed to confirm
+    Secrets:     none found
+    Destructive: 3 options to review (they delete, overwrite or skip a prompt)
+      -f                   Ignore nonexistent files and arguments, never prompt
+      --no-preserve-root   Do not treat '/' specially
+      -r                   Remove directories and their contents recursively
+  ```
+
+### Secure store (`mint/secure`)
+
+`mint/secure` keeps passwords, tokens and keys safe while an app runs:
+
+- Each secret is encrypted (AES-256-GCM) and held in **locked memory** outside Go's heap: never written to swap, **excluded from core dumps**, and wiped when removed.
+- The encryption key lives in the app's own **kernel keyring** on Linux: only this process can use it, the programs it starts do not inherit it, and the kernel deletes it when the app closes or the **idle timeout** passes.
+- Opening the store also **hardens the app**: core dumps off, and on Linux not dumpable, so other programs running as you cannot read its memory.
+- Secrets are decrypted only into locked memory, for the moment they are used, then wiped. Keep them as `[]byte` all the way to the program: a Go string makes copies nothing can wipe.
+
+```go
+st, _ := secure.Open()
+defer st.Close()
+st.Put("db-password", typed) // wipes typed
+st.Use("db-password", func(pw []byte) error {
+	_, err := stdin.Write(append(pw, '\n'))
+	return err
+})
+```
+
+**Idle timeout.** Each computer chooses its own: `$MINT_KEY_TIMEOUT` (`"5m"`, or `"0"` to keep the key until the app closes), then `~/.config/mint-interfaces/security.json`, then the administrator's `/etc/mint-interfaces/security.json` (both `{"key_timeout": "5m"}`), then 15 minutes. Each use restarts the countdown. When it passes, every secret is wiped; `Use` returns `ErrExpired` and the app asks again (`Renew` starts a fresh key).
+
+**Fallbacks.** `st.Level()` says how well secrets are protected, and `st.Notes()` why:
+
+| Level | When | What changes |
+|---|---|---|
+| full | Linux with the kernel keyring | nothing |
+| no kernel keyring | containers that block it (Docker's default profile does), macOS, the BSDs | the key is kept in its own locked page and the store enforces the timeout itself |
+| memory cannot be locked | the locked-memory limit is too low | secrets may reach swap; use encrypted swap |
+
+**In generated apps.** `appkit` keeps every secret option in this store from the moment it is entered. A secret read from standard input is written to the program straight from the store's protected memory. One passed as an environment variable or on the command line has to become an ordinary Go string at the moment the program starts, because that is the only form those take. When the idle timeout wipes a secret, its row shows "expired, enter again" and a run refuses to start without it rather than leaving it out silently.
+
+**Encrypting files, with your own algorithm.** `secure.SealBytes`, `secure.OpenSealed` and `secure.SealFile` encrypt data with a passphrase into a `.mintseal` file. Mint derives a 32-byte key from the passphrase (PBKDF2-HMAC-SHA256, 600,000 rounds, random salt) and records which *sealer* made the file, so a file always opens with the right one. The built-in sealer is AES-256-GCM. To use your own encryption, implement `secure.Sealer` and register it:
+
+```go
+type mySealer struct{}
+
+func (mySealer) Name() string                              { return "my-scheme-v1" }
+func (mySealer) Seal(key, plain []byte) ([]byte, error)    { /* encrypt */ }
+func (mySealer) Open(key, sealed []byte) ([]byte, error)   { /* decrypt; fail if key or data is wrong */ }
+
+func init() { secure.RegisterSealer(mySealer{}) }
+```
+
+Choose it for new files with `$MINT_SEALER=my-scheme-v1` or `{"sealer": "my-scheme-v1"}` in `security.json`. `secure.PrivateDir` gives the private in-memory folder generated apps use for results.
+
+### Limits
+
+- **Root can see everything.** Root, and anything with root's power, can read the app's memory, its kernel keyring and the environment of the programs it starts.
+- **Some routes are visible to other users.** A secret that a tool accepts only on the command line, or one you type into Extra arguments or Target, can be seen by other users (for example with `ps`) while the program runs. Mint warns and asks first.
+- **Some copies sit in ordinary memory for a moment.** The password box hands over what was typed as a Go string, and a secret passed as an environment variable or argument must become one. Those copies stay in ordinary memory until they are garbage-collected. While a secret is encrypted or decrypted, Go's AES keeps the expanded key there too. Core dumps are off, so this matters only if the system swaps those pages.
+- **Weaker without the kernel keyring or locked memory.** In containers, on macOS and on the BSDs the key is kept in locked memory instead of the keyring. Without enough locked memory, secrets may reach swap, so use encrypted swap (see Fallbacks above).
+- **Masking has gaps.** Secrets shorter than 4 characters are not hidden in output. Files a tool writes through its own output option are not changed; they are made private, and "Encrypt the output" protects them. The Extra arguments box still shows what you typed while you edit it.
+- **Memory and deleted files are not absolute.** The in-memory folder can be swapped to disk like any memory, so use encrypted swap. When a file is encrypted, the original is overwritten and removed, but journaling and copy-on-write file systems and SSDs may keep old copies. A decrypted file shown in the viewer is held as ordinary Go strings while it is open.
+- **Data levels come from lists.** A tool, archetype or option that is not on the lists, or a secret in a format Mint does not recognise, is not detected. Set `ToolSpec.Data` yourself when you know better.
+- **Option detection depends on the help text.** `mint-gen` finds secret and destructive options from the man page and `--help`. A tool whose short help leaves options out (such as `curl`) may have secret options it does not know about. The text-box check still catches values typed by hand.
+
+### Conclusion
+
+On an ordinary Linux desktop, secrets typed into a Mint app stay in protected memory, are never saved, and are hidden wherever they would be shown, while sensitive results stay private, in memory or encrypted with your own scheme. What remains open is anything with root's power, the routes a tool itself forces onto the command line, and copies the disk or swap may keep, which Mint warns about or documents above.
+
+## Standalone binaries and flags
+
+Every Mint app compiles into a single, statically linked binary that runs on any Linux machine without Go or Emacs installed:
+
+```sh
+./tools/build.sh ./templates/app ./mytool
+./mytool
+```
+
+Apps with their own `go.mod` under `apps/<tool>` are built the same way: `./tools/build.sh ./apps/<tool> ./<tool>-mint`.
+
+`mint.App` handles a few things at startup, before taking over the terminal:
+
+- **Flags.** The first argument may be one of Mint's flags:
+  - `--help` (`-h`) lists the app's screens and usage, and points at `mint-gen --help` for the guide. It does not repeat that guide.
+  - `--man` opens the Manual screen, the program's full manual. `--help` still prints usage. The same screen is the Manual item on the home menu.
+  - `--version` (`-v`) prints `mytool 1.2.0 (Mint-Interfaces 1.0.1)`, using `App.Version` for the app's own version.
+  - `--mint-info` prints a JSON description (title, version, screens, required and missing tools) for launchers such as Emacs.
+  - `--screen NAME` opens that home item directly, and Back returns to the home list.
+  - `--theme NAME` uses one of the seven [themes](#colour) for this run only. It may come before any of the others: `mytool --theme nord --screen Run`.
+
+  Only the first argument is checked (after `--theme NAME`), so `mytool somefile -v` is left alone. An app that parses its own arguments sets `NoFlags: true` to turn these off.
+- **Required programs.** `Require: []string{"rsync"}` checks `PATH`, and any missing program is named at the top of the home list, ahead of the app's own `Note`.
+- **No terminal.** Started without one (input redirected, or launched from a non-terminal tool), the app explains that it needs a terminal and exits with status 2, instead of spinning.
+- **Lost terminal.** If the terminal disappears while the app runs (window closed, Emacs killed), `Run` returns so the app can clean up (for example `runner.StopAll()`), rather than lingering.
+
+### Where an app keeps its files
+
+| Folder | What's in it | Created when |
+|---|---|---|
+| `<mint-interfaces>/apps/<tool>/` | the output files it saves (its Output Directory), next to the app itself | the first time a run saves output |
+| `~/.config/mint-<tool>/` | its settings and presets | you change a setting or save a preset |
+| `~/.local/share/mint-<tool>/` | its run history | the first run |
+| `~/.config/mint-interfaces/` | the theme every app shares (`theme.conf`), and what Mint learned about your terminal (`termcaps.json`) | you save a theme; an app first starts |
+
+The Output Directory screen lists only results: the app's own files (`go.mod`, `main.go`, `spec.go`, the program) are left out, and `mint-gen --remove` and `--purge` delete only those, so saved results stay. Choose another folder on the Output Directory screen, or with `DefaultResultsDir` for an app you build yourself. An app with no folder of its own, or one whose folder has moved, saves to `~/mint-results/<tool>/`; settings saved when that was the default move to the app's own folder, and a folder you chose is kept.
+
+**Where the program runs.** Programs that write files of their own and never look at the folder they're in run in the results folder, so a capture, a scan report or a download lands there instead of wherever you started the app (`nmap -oA scan`, `tshark -w cap.pcap`, `curl -O`, `wget`, `ffmpeg … out.mkv`). These are the Ask, Look up, Watch, Record, Record sound, Probe, Measure, Convert, Generate, Transfer, Signal, Control and Device archetypes. What you type keeps its meaning: a relative path that names something in the folder you started the app in, a `./` or `../` path, and anything in a box for files the program reads are made absolute from that folder first (the command preview shows the full path). Names in boxes for files it writes stay relative, so they land in the results folder. Every other program runs where you started the app, because it works on that folder when given nothing else (`ls`, `rg`, `git`, `make`, `tar`) or changes the files you give it where they are (`mv`, `rsync`).
+
+**Saving from the output viewer.** `s` in the full-screen viewer offers the results folder, and saves as privately as the Save captured output action: readable only by you when the run's data is sensitive. A file you decrypted to read cannot be saved from the viewer, so it never reaches the disk unencrypted.
+
+**Under sudo.** An app started with sudo keeps its settings, history and results in your home, not root's, and hands what it writes back to you, including results in its own folder when Mint-Interfaces is installed in `/usr/local/share`; the app's folder and its own files stay root's, so nobody can swap the program sudo runs. Mint's shared settings (`theme.conf`, `termcaps.json`, `security.json`, `tools.d/`) are root's own under sudo, in `/root/.config/mint-interfaces/`, even when sudo keeps `HOME` pointing at your home, so root never creates files there. Your theme is still read when root has none of its own.
+
+## Keys
+
+Arrow keys, Enter, Space, Esc, `b` and `q` always work. Home, End, Page Up and Page Down jump and page through lists; other keys Mint doesn't use, such as Delete or F5, are ignored.
+
+A key profile adds a familiar set on top:
+
+| Profile | Move | Change | Back | First / last | Page |
+|---|---|---|---|---|---|
+| `default` | ↑ ↓ | ← → Space | Esc, b | Home, End | PgUp, PgDn |
+| `emacs` | `C-n` `C-p` | `C-f` `C-b` | `C-g` | `C-a`/`M-<`, `C-e`/`M->` | `M-v`, `C-v` |
+| `vim` | `j` `k` | `h` `l` | Esc, b | `g`, `G` | `C-u`/`C-b`, `C-d`/`C-f` |
+
+On a screen with panes, Tab and Shift-Tab move between them, `[` and `]` shrink and grow the focused pane, `|` hides or shows it, and a click focuses one. In tables, ← and → scroll sideways and `H` and `L` narrow or widen a column.
+
+The person running the app chooses with the `MINT_KEYS` environment variable (`export MINT_KEYS=vim`). An app can set its own default with `App.Keys`. In the vim profile, letters only act as keys outside text fields, so typing still works. The footer hints follow the profile.
+
+## Running from Emacs (`emacs/mint.el`)
+
+`mint.el` launches Mint apps from Emacs using only what's built into Emacs.
+
+In terminal Emacs, the default is **handover**. Emacs steps aside, the app runs on the real terminal Emacs is using, and Emacs redraws itself when you quit the app. Nothing is emulated, so the app looks and behaves exactly as it does outside Emacs: colours, mouse, a single Esc to go back, and live animation. Emacs keeps running in the background meanwhile.
+
+Emacs also sets up each app it launches:
+
+- **Keys:** `mint-key-profile` (default `emacs`) gives every app Emacs keys. Set it to `vim` or `default`, or to `nil` to leave `MINT_KEYS` alone.
+- **Colours:** with `mint-match-theme` on (the default), apps take their colours from the current Emacs theme. `mint-theme-faces` says which face each colour comes from. On terminals without 24-bit colour, Emacs passes the same 256-colour approximations it uses itself, so the app matches what Emacs shows.
+
+Setup:
+
+```elisp
+(add-to-list 'load-path "/path/to/Mint-Interfaces/emacs")
+(require 'mint)
+(setq mint-app-directories '("~/mint-apps"))   ; optional: folders of compiled Mint apps
+```
+
+Commands:
+
+- `M-x mint` chooses an app, showing each one's description. With `C-u`, it also asks which screen to open.
+- `M-x mint-run` runs any compiled Mint binary.
+- `M-x mint-run-source` builds an app's Go folder if needed, then runs it. It rebuilds only when a `.go` file has changed.
+- `(mint-define-app mytool "mytool" "/path/to/mytool-ui/")` defines `M-x mytool` and adds the app to `M-x mint`. The starter's `templates/app/app.el` does this for a new interface.
+
+Hooks: `mint-before-launch-functions` runs with the app's name, and `mint-after-exit-functions` runs with the name and exit status. The exit hook is useful for refreshing buffers the app may have changed.
+
+**The other display mode.** `mint-display` can also be `term`, which runs the app in an Emacs buffer using the built-in terminal emulator, so it can sit beside other windows. Graphical Emacs has no terminal to hand over, so `auto` (the default) uses `term` there.
+
+Tests: `emacs -Q --batch -L emacs -l emacs/mint-tests.el -f ert-run-tests-batch-and-exit` (needs Go).
+
+### Limitations in Emacs
+
+**Handover (the default in terminal Emacs)**
+
+- The app takes over the whole terminal until you quit it. You can't see it beside other Emacs windows; use `term` mode or a terminal multiplexer such as tmux for that.
+- Emacs keeps running in the background (timers, processes, the Emacs server), but you can't see or type into Emacs until the app exits.
+- Terminal Emacs only, since graphical Emacs has no terminal to hand over.
+- Emacs's own key bindings don't apply while the app is open: every key goes to the app. With `mint-key-profile` set to `emacs`, the app understands the common movement keys and `C-g`.
+
+**`term` mode (built in; the default in graphical Emacs)**
+
+- Emacs's built-in terminal emulator has bugs that affect full-screen programs. `mint.el` works around the ones found in testing (characters split between chunks of output, and sideways scrolling), but very busy screens, such as fast-moving progress bars, can still occasionally draw a frame wrongly. Moving to another row redraws it.
+- It is slower than a real terminal on busy screens.
+- `C-x` is passed to Emacs (so window commands work) and never reaches the app.
+
+**General**
+
+- Tested on Emacs 29.3 and 30.1 in a terminal. Graphical Emacs has not been tested.
+- Themes are matched from the faces named in `mint-theme-faces`. If your theme leaves a face's colour unset (common for the default text colour in terminal Emacs), the app keeps its own colour for that role.
+
+### Running an app in Emacs's terminals (`term`, `ansi-term`, `vterm`)
+
+You can also start a Mint app yourself inside `M-x term`, `M-x ansi-term` or [vterm](https://github.com/akermu/emacs-libvterm). Tested on Emacs 29.3 and 30.1 at 100×30 and 100×48: drawing, box lines, colours and resizing are right in all three, and arrows, Enter, Tab and typing work. The differences are in which keys Emacs keeps:
+
+| | `term` | `ansi-term` | `vterm` |
+|---|---|---|---|
+| Esc | press it twice (one Esc is Emacs's Meta prefix) | press it twice | press it twice |
+| Shift-Tab | not passed on (see below) | not passed on | works |
+| Keys Emacs keeps | `C-c` | `C-c`, `C-x` | `C-g`, `C-c`, `C-x`, `C-h`, `C-u`, `M-x`, `M-o`, `C-y` |
+| Mouse | Emacs handles clicks; they don't reach the app | same | same |
+
+- **Shift-Tab** (previous pane) in `term` and `ansi-term`: Emacs has no binding for it there. Add one:
+
+  ```elisp
+  (with-eval-after-load 'term
+    (define-key term-raw-map [backtab]
+      (lambda () (interactive) (term-send-raw-string "\e[Z"))))
+  ```
+
+- **Esc in `vterm`:** `vterm` sends a double Esc as Ctrl+Alt+`[`, which Mint reads as Esc. To send one Esc at a time, bind `vterm-send-escape`, for example `(define-key vterm-mode-map (kbd "<escape>") #'vterm-send-escape)` in graphical Emacs.
+- **Keys Emacs keeps:** with the `emacs` key profile, `C-g` (back) never reaches an app in `vterm`. Run apps there with the default profile (`MINT_KEYS=default`), whose keys Emacs leaves alone, or use `b` and `q`, which always work.
+- **Colours:** in terminal Emacs, `vterm` turns a 256-colour number into RGB, and Emacs then shows the nearest colour its own terminal has. The `default` theme's purple (141) goes through that round trip and comes out as 99, slightly darker. Themes with RGB colours (`nord`, `dracula`…) are matched only once and look as expected.
+
+For the closest match to a real terminal inside an Emacs buffer, use `mint.el` itself: `M-x mint` with `mint-display` set to `term`. It sends a single Esc straight to the app, keeps the screen the window's size, and passes clicks to the app at the right position.
+
+## Running in Vim, Neovim and tmux
+
+Mint apps are ordinary terminal programs, so they work inside the terminals built into Vim and Neovim and inside tmux. Each of these was tested with Vim 9.1, Neovim 0.9.5 and tmux 3.4 (see [Prerequisites](#prerequisites) for the newest versions tested): drawing, colours, every key including a single Esc, mouse clicks, animation, resizing, and quitting.
+
+| Where | How | Notes |
+|---|---|---|
+| Neovim | `:terminal mytool`, then `i` (or `+startinsert`) | Keys go to the app in Terminal mode; `C-\ C-n` leaves it. |
+| Neovim, beside your work | `:vsplit \| terminal mytool` | The app redraws to fit the split. |
+| Neovim, floating | `termopen` in a floating window (below) | |
+| Vim | `:terminal mytool` (a split) or `:terminal ++curwin mytool` | `C-w` is Vim's terminal prefix and never reaches the app. |
+| Vim, full screen | `:!mytool` | Vim hands over the real terminal, like Emacs's handover. |
+| tmux | a pane, a window, or `tmux display-popup -E -w 80% -h 80% mytool` | |
+
+A floating Neovim window that closes when the app quits:
+
+```lua
+vim.keymap.set("n", "<leader>m", function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  local w, h = math.floor(vim.o.columns * 0.8), math.floor(vim.o.lines * 0.8)
+  vim.api.nvim_open_win(buf, true, { relative = "editor", width = w, height = h,
+    row = math.floor((vim.o.lines - h) / 2), col = math.floor((vim.o.columns - w) / 2), border = "rounded" })
+  vim.wo.winhighlight = "NormalFloat:Normal"   -- keep the app's background, not the float colour
+  vim.fn.termopen("mytool", { on_exit = function() vim.cmd("close") end })
+  vim.cmd.startinsert()
+end)
+```
+
+Settings that matter:
+
+- **tmux: `set -g mouse on`** for mouse clicks to reach the app (and the popup), and **`set -sg escape-time 10`**, because tmux otherwise holds every Esc for half a second before passing it on.
+- **Vim: `set ttimeout ttimeoutlen=50`** (already set by Vim's `defaults.vim`, but not with `vim -u NONE`), or Esc waits a second. `set mouse=a` for clicks.
+- **Neovim** needs nothing: Esc is passed on at once, and mouse clicks work in Terminal mode.
+- **Key profiles:** tmux's prefix is `C-b`, which the emacs profile uses for ← and the vim profile for Page Up. Press `C-b C-b` to send it through, use the arrow keys, or change the tmux prefix.
+
+Limitations:
+
+- `:!mytool` in Neovim doesn't work: Neovim runs `:!` commands without a terminal, so the app says it needs one and exits. Use `:terminal`.
+- In a terminal split, the app gets only the split's size. Below about 48 columns or 12 rows it shows "Terminal too small" until the split is made bigger, as it would anywhere.
+
+## Licence
+
+The UI layer is derived from Terminal Settings Manager by Curtis and is under the Apache License 2.0. See `LICENSE`.
