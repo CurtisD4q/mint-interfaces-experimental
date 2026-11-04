@@ -34,6 +34,14 @@ type App struct {
 	Items       []HomeItem
 	ScreenHints string // footer override for every screen
 
+	// BannerText, when set, is drawn as a big title (see Banner) at the top
+	// of the home list, above the Note. It is left out, and the list looks as
+	// it always has, when the terminal is not UTF-8, is too narrow for it,
+	// or is too short to keep two home items on screen beneath it. Not to be
+	// confused with Screen.Banner, the amber notice line under a screen's
+	// title.
+	BannerText string
+
 	// SectionSpacing puts that many blank lines between named sections on
 	// every screen (a screen's own setting wins).
 	SectionSpacing int
@@ -69,7 +77,7 @@ type App struct {
 
 const homeBlock = 3
 
-func runHome(items []HomeItem, startSel int, title, breadcrumb, note, hints string, statusFn func() []Badge) (int, bool) {
+func runHome(items []HomeItem, startSel int, title, breadcrumb, note, banner, hints string, statusFn func() []Badge) (int, bool) {
 	sel := startSel
 	if sel < 1 {
 		sel = 1
@@ -104,16 +112,20 @@ func runHome(items []HomeItem, startSel int, title, breadcrumb, note, hints stri
 				noteLines = append(noteLines, nl[1])
 			}
 		}
-		// Row 3 is the rule. Notes move down onto the blank row that
-		// used to sit under them, so the list still starts where it did.
-		contentTop := 4
+		// Row 3 is the rule. A banner, when there is room for one, starts on
+		// row 4 with a blank row under it; then come the note's rows (they
+		// sit on the blank row that used to be under the rule, so the list
+		// still starts where it did) and then the list.
+		noteRows := 0
 		if len(noteLines) > 0 && noteLines[0] != "" {
-			cv.put(4, 3, C.Amber+noteLines[0]+Reset)
-			contentTop = 5
-			if len(noteLines) > 1 {
-				cv.put(5, 3, C.Amber+noteLines[1]+Reset)
-				contentTop = 6
-			}
+			noteRows = len(noteLines)
+		}
+		bannerLines, noteTop, contentTop := homeHeaderRows(h, w, banner, noteRows, rt.profile.ASCIIOnly)
+		for i, line := range bannerLines {
+			cv.put(4+i, 3, bannerStyle()+line+Reset)
+		}
+		for i := 0; i < noteRows; i++ {
+			cv.put(noteTop+i, 3, C.Amber+noteLines[i]+Reset)
 		}
 		contentBottom := h - 2
 		avail := contentBottom - contentTop + 1
@@ -355,7 +367,7 @@ func (a *App) Run() {
 		}
 		for {
 			if len(stack) == 0 {
-				choice, ok := runHome(a.all, sel, title, "Home", note, HomeHints, a.Status)
+				choice, ok := runHome(a.all, sel, title, "Home", note, a.BannerText, HomeHints, a.Status)
 				if !ok {
 					return ""
 				}
