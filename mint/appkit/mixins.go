@@ -17,7 +17,7 @@ import (
 // MixinInfo describes a registered mixin.
 type MixinInfo struct {
 	Name    MixinName
-	Summary string // one line, for mint-gen --list-archetypes
+	Summary string // one line, for minte-gen --list-archetypes
 	Fields  string // the ToolSpec fields that switch it on and configure it
 	Order   int    // canonical position: the original 8 are 1..8
 
@@ -75,7 +75,7 @@ func (s ToolSpec) EnabledMixinNames() []MixinName {
 }
 
 // Validate checks the settings of every mixin s uses, and returns the
-// first problem found. mint-gen runs it before writing spec.go.
+// first problem found. minte-gen runs it before writing spec.go.
 func (s ToolSpec) Validate() error {
 	for _, m := range mixinRegistry {
 		if m.Validate == nil || !m.Enabled(&s) {

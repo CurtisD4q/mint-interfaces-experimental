@@ -1029,7 +1029,7 @@ func isOutputFileFlag(tool string, f appkit.FlagSpec) bool {
 	return role == appkit.RoleOutputFile
 }
 
-// stripFlagSuffix drops the " (-x)" mint-gen adds to labels.
+// stripFlagSuffix drops the " (-x)" minte-gen adds to labels.
 func stripFlagSuffix(label, flag string) string {
 	return strings.TrimSpace(strings.TrimSuffix(label, "("+flag+")"))
 }
@@ -1158,7 +1158,7 @@ func isFixedValueAlias(first, second, arg string) bool {
 }
 
 // knownOnlyFlags turns options the known-tools list names, but the help
-// text did not show in a form mint-gen could read, into fields with their
+// text did not show in a form minte-gen could read, into fields with their
 // roles (pandoc -t, ffmpeg -i), so the app offers them.
 func knownOnlyFlags(tool string, have []appkit.FlagSpec, outputFlag string) []appkit.FlagSpec {
 	kt, ok := KnownToolIO(tool)
@@ -1193,6 +1193,6 @@ var helpNotesTo io.Writer = os.Stderr
 
 func printHelpNotes(notes []string) {
 	for _, n := range notes {
-		fmt.Fprintln(helpNotesTo, "mint-gen: "+safeTerminalText(n))
+		fmt.Fprintln(helpNotesTo, "minte-gen: "+safeTerminalText(n))
 	}
 }

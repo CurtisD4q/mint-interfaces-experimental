@@ -18,13 +18,13 @@ func writeFile(t *testing.T, path, text string) {
 	}
 }
 
-// Problem 3: --remove must never delete a folder mint-gen did not create.
-func TestRemoveRefusesFoldersMintGenDidNotCreate(t *testing.T) {
+// Problem 3: --remove must never delete a folder minte-gen did not create.
+func TestRemoveRefusesFoldersMinteGenDidNotCreate(t *testing.T) {
 	project := t.TempDir()
 	writeFile(t, filepath.Join(project, "go.mod"), "module example.com/mine\n")
 	writeFile(t, filepath.Join(project, "main.go"), "package main\nfunc main() {}\n")
 	if code := runCLI([]string{"--remove", "anything", "--out", project}); code == 0 {
-		t.Fatal("--remove succeeded on a project mint-gen did not create")
+		t.Fatal("--remove succeeded on a project minte-gen did not create")
 	}
 	for _, name := range []string{"go.mod", "main.go"} {
 		if _, err := os.Stat(filepath.Join(project, name)); err != nil {
@@ -45,7 +45,7 @@ func TestRemoveDeletesOnlyGeneratedFiles(t *testing.T) {
 		t.Fatalf("exit %d", code)
 	}
 	if _, err := os.Stat(filepath.Join(out, "my-notes.txt")); err != nil {
-		t.Fatal("a file mint-gen did not create was deleted")
+		t.Fatal("a file minte-gen did not create was deleted")
 	}
 	if _, err := os.Stat(filepath.Join(out, "spec.go")); !os.IsNotExist(err) {
 		t.Fatal("generated spec.go was not removed")

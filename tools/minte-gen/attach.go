@@ -296,7 +296,7 @@ func inferReadOnly(spec *appkit.ToolSpec, lines []string) {
 
 // reChangingOption is an option, anywhere in the help, whose name says it
 // changes things: xrdb's -load and -merge, faillock's --reset, find's
-// -delete and -exec. Options mint-gen did not parse (find's actions,
+// -delete and -exec. Options minte-gen did not parse (find's actions,
 // faillock's) are caught too.
 var reChangingOption = regexp.MustCompile(`(?i)(?:^|[\s\[,|(])--?(?:[a-z0-9]+-)*(?:reset|load|merge|remove|clear|delete|set|write|kill|flush|apply|import|purge|wipe|erase|unlock|lock|replace|install|uninstall|update|upgrade|edit|modify|create|add|exec|execdir|ok|okdir|fix|repair|restore|rename|move|truncate|format|mount|umount|unmount|enable|disable|start|stop|restart|reload|signal|send|commit|push|apply)\b`)
 

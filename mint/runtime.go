@@ -140,7 +140,7 @@ var terminalProbes = []terminalProbe{
 
 // DetectProgram names the terminal from the environment: TERM_PROGRAM, then
 // each terminal's private variable. It is what the capability cache is keyed
-// on, and mint-gen uses it so both sides agree on the key.
+// on, and minte-gen uses it so both sides agree on the key.
 func DetectProgram() string { return detectProgram() }
 
 // termNames are the terminal names that come from $TERM when no private

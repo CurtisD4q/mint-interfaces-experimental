@@ -1,6 +1,6 @@
 # Mint Starters — 38 Archetypes & Mixins
 
-Every compatible Linux CLI program can be wrapped in Mint using **38 archetypes** (what kind of program it is) and **composable mixins** (add-ons), provided by `mint/appkit`. `tools/mint-gen` detects a program's archetype. `MainScreen` is one screen assembled from that archetype: what it takes, how it runs, and what it shows.
+Every compatible Linux CLI program can be wrapped in Mint using **38 archetypes** (what kind of program it is) and **composable mixins** (add-ons), provided by `mint/appkit`. `tools/minte-gen` detects a program's archetype. `MainScreen` is one screen assembled from that archetype: what it takes, how it runs, and what it shows.
 
 ---
 
@@ -29,7 +29,7 @@ These folders are small example programs. They are not separate screen types: ea
 | `WithCollapsibleOutput` | `CollapsibleOutput`, `ChunkSize` | Automatically splits section-headed or long output into foldable `mint.Collapsible` blocks |
 | `WithProfiles` | `Profiles []ProfileSpec` | Adds a preset selector that sets flags and extra arguments. Archetypes that run long jobs or rely on presets start with `Default`, `Fast / Quiet` and `Verbose`; the rest with `Default`. Your own presets are saved from the Presets screen |
 | `WithDynamicChoices` | `FlagSpec.ChoicesCmd []string` | Populates `FlagChoice` options at runtime by running a command (e.g., `ip -o link`, `lsblk -dn -o NAME`) |
-| `WithRootAuth` | `NeedsRoot` | Adds a "Root access" section: it shows whether the app runs as root and, if not, the `sudo` command that restarts it with root rights. Mint never asks for or handles the sudo password; `mint-gen --run` offers to start these apps with sudo |
+| `WithRootAuth` | `NeedsRoot` | Adds a "Root access" section: it shows whether the app runs as root and, if not, the `sudo` command that restarts it with root rights. Mint never asks for or handles the sudo password; `minte-gen --run` offers to start these apps with sudo |
 | `WithConfirm` | `ConfirmRun`, `ConfirmPrompt` | Asks before running (`mint.Confirm`). Tools marked `Irreversible` (`dd`, `shred`, `rm`, `kill`, `pkill`…) need the target typed instead (`mint.TypeToConfirm`) |
 | `WithHistory` | `KeepHistory` | Saves past runs, command lines, durations, and output paths to `~/.local/share/mint-<tool>/runs.json` |
 
@@ -37,7 +37,7 @@ These folders are small example programs. They are not separate screen types: ea
 
 ## 3. The 38 Archetypes
 
-Each archetype says what a program takes, how it runs and what it shows. Its blueprint is every add-on wanted at weight 0.5 or more. `MainScreen` uses that blueprint: a target, two inputs, or subcommand tabs; a one-shot run, a live poll, or a state editor; and an inline result when the archetype shows one. `mint-gen --list-archetypes` lists them, and `mint-gen --archetype <id> <program>` chooses one yourself. Programs named below are on the archetype lists (`mint/appkit/archetypetools.go`); any other program gets the archetype its help points to.
+Each archetype says what a program takes, how it runs and what it shows. Its blueprint is every add-on wanted at weight 0.5 or more. `MainScreen` uses that blueprint: a target, two inputs, or subcommand tabs; a one-shot run, a live poll, or a state editor; and an inline result when the archetype shows one. `minte-gen --list-archetypes` lists them, and `minte-gen --archetype <id> <program>` chooses one yourself. Programs named below are on the archetype lists (`mint/appkit/archetypetools.go`); any other program gets the archetype its help points to.
 
 | ID | Name | Group | Runs | What it is | Add-ons | Listed programs (examples) |
 |---|---|---|---|---|---|---|

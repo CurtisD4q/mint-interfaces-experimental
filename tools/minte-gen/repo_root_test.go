@@ -14,8 +14,8 @@ func TestFindsTheMintInterfacesFolder(t *testing.T) {
 	if !isRepoRoot(repo) {
 		t.Fatalf("%s is not recognised as the Mint-Interfaces folder", repo)
 	}
-	if got := rootAbove(filepath.Join(repo, "tools", "mint-gen")); got != repo {
-		t.Fatalf("rootAbove from tools/mint-gen = %q", got)
+	if got := rootAbove(filepath.Join(repo, "tools", "minte-gen")); got != repo {
+		t.Fatalf("rootAbove from tools/minte-gen = %q", got)
 	}
 	// An app's own go.mod (module …/apps/ps) is not the root.
 	app := t.TempDir()
@@ -26,7 +26,7 @@ func TestFindsTheMintInterfacesFolder(t *testing.T) {
 }
 
 // Run from a folder outside Mint-Interfaces, with no install to fall back
-// on, mint-gen stops rather than writing apps/ into that folder.
+// on, minte-gen stops rather than writing apps/ into that folder.
 func TestNoAppsWrittenOutsideMintInterfaces(t *testing.T) {
 	away := t.TempDir()
 	oldWD, _ := os.Getwd()
@@ -42,11 +42,11 @@ func TestNoAppsWrittenOutsideMintInterfaces(t *testing.T) {
 	}
 	for _, args := range [][]string{{"ls"}, {"--list"}, {"--purge"}, {"--remove", "ls"}} {
 		if code := runCLI(args); code != 2 {
-			t.Errorf("mint-gen %v outside Mint-Interfaces: exit %d, want 2", args, code)
+			t.Errorf("minte-gen %v outside Mint-Interfaces: exit %d, want 2", args, code)
 		}
 	}
 	if _, err := os.Stat(filepath.Join(away, "apps")); err == nil {
-		t.Fatal("mint-gen wrote apps/ into the folder it was run from")
+		t.Fatal("minte-gen wrote apps/ into the folder it was run from")
 	}
 	// --root must be the real folder.
 	if code := runCLI([]string{"--root", away, "ls"}); code != 2 {

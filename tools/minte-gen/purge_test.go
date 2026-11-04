@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// makeScaffold writes the files mint-gen writes for tool in dir.
+// makeScaffold writes the files minte-gen writes for tool in dir.
 func makeScaffold(t *testing.T, dir, tool string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -21,14 +21,14 @@ func makeScaffold(t *testing.T, dir, tool string) {
 	}
 }
 
-func TestPurgeAsksAndRemovesOnlyMintGenApps(t *testing.T) {
+func TestPurgeAsksAndRemovesOnlyMinteGenApps(t *testing.T) {
 	root := t.TempDir()
 	apps := filepath.Join(root, "apps")
 	makeScaffold(t, filepath.Join(apps, "nmap"), "nmap")
 	makeScaffold(t, filepath.Join(apps, "ps"), "ps")
 	// A file of the user's inside an app folder survives, and so the folder.
 	os.WriteFile(filepath.Join(apps, "ps", "notes.txt"), []byte("mine"), 0o644)
-	// A folder mint-gen did not create.
+	// A folder minte-gen did not create.
 	os.MkdirAll(filepath.Join(apps, "mine"), 0o755)
 	os.WriteFile(filepath.Join(apps, "mine", "main.go"), []byte("package main"), 0o644)
 	// A link to an app somewhere else is not followed.
@@ -54,7 +54,7 @@ func TestPurgeAsksAndRemovesOnlyMintGenApps(t *testing.T) {
 	}
 	code, out := purge("n\n")
 	_ = code
-	for _, want := range []string{"nmap", "ps", "(y/n)", "Left alone (mint-gen did not create them): df, mine"} {
+	for _, want := range []string{"nmap", "ps", "(y/n)", "Left alone (minte-gen did not create them): df, mine"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("the question does not show %q:\n%s", want, out)
 		}
@@ -70,7 +70,7 @@ func TestPurgeAsksAndRemovesOnlyMintGenApps(t *testing.T) {
 		t.Fatal("ps: generated files should go and the user's file stay")
 	}
 	if !exists(filepath.Join(apps, "mine", "main.go")) {
-		t.Fatal("a folder mint-gen did not create was touched")
+		t.Fatal("a folder minte-gen did not create was touched")
 	}
 	if !exists(filepath.Join(elsewhere, "spec.go")) || !exists(filepath.Join(apps, "df")) {
 		t.Fatal("a linked app was followed")

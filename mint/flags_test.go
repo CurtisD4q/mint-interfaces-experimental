@@ -38,11 +38,11 @@ func TestManFlagOpensManualAndHelpStaysUsage(t *testing.T) {
 	if !strings.Contains(out, "--man") || !strings.Contains(out, "open the manual") {
 		t.Fatalf("usage does not offer --man:\n%s", out)
 	}
-	if !strings.Contains(out, "See `mint-gen --help` for a guide.") {
+	if !strings.Contains(out, "See `minte-gen --help` for a guide.") {
 		t.Fatalf("usage has no pointer to the guide:\n%s", out)
 	}
-	if strings.Contains(out, "Using mint-gen") || strings.Contains(out, "Using a Mint app") {
-		t.Fatalf("app --help grew the mint-gen guide:\n%s", out)
+	if strings.Contains(out, "Using minte-gen") || strings.Contains(out, "Using a Mint app") {
+		t.Fatalf("app --help grew the minte-gen guide:\n%s", out)
 	}
 }
 

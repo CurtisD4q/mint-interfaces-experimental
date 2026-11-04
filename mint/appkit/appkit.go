@@ -115,7 +115,7 @@ type ToolSpec struct {
 	FullScreen bool `json:"full_screen,omitempty"`
 	// BatchArgs start every run (and every live refresh) so a program that
 	// is full-screen by default prints plain text and exits instead:
-	// top -b -n 1, lynx -dump. See mint-gen's batch modes.
+	// top -b -n 1, lynx -dump. See minte-gen's batch modes.
 	BatchArgs []string `json:"batch_args,omitempty"`
 	// ColourArgs ask the program for its colours when it would leave them
 	// out without a terminal (fastfetch --pipe false). Mint keeps only the
@@ -391,7 +391,7 @@ func New(spec ToolSpec) *ToolApp {
 		home = "."
 	}
 	// Output is saved in the app's own results folder: for an app
-	// mint-gen built, its folder inside Mint-Interfaces (apps/<tool>). An
+	// minte-gen built, its folder inside Mint-Interfaces (apps/<tool>). An
 	// app whose folder is gone (moved, or the binary copied elsewhere), or
 	// one with no folder of its own, uses ~/mint-results/<tool>.
 	homeResults := filepath.Join(home, "mint-results", spec.Name)
@@ -1421,7 +1421,7 @@ func (a *ToolApp) ListResultsDir() ([]FileEntry, error) {
 	}
 	eagerStat := len(entries) <= 256
 	out := make([]FileEntry, 0, len(entries))
-	// In the app's own folder, mint-gen's files (the app's source and the
+	// In the app's own folder, minte-gen's files (the app's source and the
 	// program itself) are not results: leave them out.
 	own := a.Spec.DefaultResultsDir != "" && filepath.Clean(dir) == filepath.Clean(a.Spec.DefaultResultsDir)
 	for _, e := range entries {
@@ -2532,11 +2532,11 @@ func parentExists(dir string) bool {
 	return err == nil && fi.IsDir()
 }
 
-// isAppFile reports whether name is one of the files mint-gen writes in
-// the folder of the app named tool (see tools/mint-gen scaffoldFiles).
+// isAppFile reports whether name is one of the files minte-gen writes in
+// the folder of the app named tool (see tools/minte-gen scaffoldFiles).
 func isAppFile(tool, name string) bool {
 	switch name {
-	case "go.mod", "go.sum", "main.go", "spec.go", ".mint-gen", tool + "-mint", tool + "-mint.el":
+	case "go.mod", "go.sum", "main.go", "spec.go", ".minte-gen", tool + "-mint", tool + "-mint.el":
 		return true
 	}
 	return false

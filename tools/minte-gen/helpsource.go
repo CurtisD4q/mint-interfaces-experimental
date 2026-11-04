@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// HelpSource is one piece of documentation mint-gen read about a program.
+// HelpSource is one piece of documentation minte-gen read about a program.
 type HelpSource struct {
 	Name string   // "man", "--help", "-h", "--help all", ...
 	Args []string // the arguments the program was run with
@@ -23,8 +23,8 @@ type HelpSource struct {
 	Why  string `json:",omitempty"` // why it was read, when not obvious ("the help says to run \"dig -h\"")
 }
 
-// Limits for reading help. A program cannot make mint-gen wait, fill its
-// memory, or keep running after mint-gen has read what it needs.
+// Limits for reading help. A program cannot make minte-gen wait, fill its
+// memory, or keep running after minte-gen has read what it needs.
 const (
 	helpTimeout  = 5 * time.Second // Python and Node programs can be slow the first time
 	helpMaxBytes = 2 << 20         // per run
@@ -35,7 +35,7 @@ const (
 var helpEnvKeep = []string{"PATH", "MANPATH", "MANSECT", "TZ"}
 
 // helpVariants are extra ways of asking for the full help. Each is tried
-// only when the program's own help mentions it, so mint-gen never runs a
+// only when the program's own help mentions it, so minte-gen never runs a
 // program with arguments it did not ask for.
 var helpVariants = []struct {
 	name string
@@ -52,7 +52,7 @@ var helpVariants = []struct {
 	{"-h2", regexp.MustCompile(`(?m)^\s*-h2\b.*\bmore help\b`), []string{"-h2"}},
 }
 
-// helpPointerArgs are the only argument lists mint-gen runs because a
+// helpPointerArgs are the only argument lists minte-gen runs because a
 // program's help tells the reader to run them ("Use \"dig -h\" for the
 // complete list of options"). A pointer naming anything else (a command,
 // a file, "| more") is never followed: "dig help" would look up the
@@ -134,7 +134,7 @@ var (
 )
 
 func newHelpRunner() (*helpRunner, func(), error) {
-	dir, err := os.MkdirTemp("", "mint-gen-help-")
+	dir, err := os.MkdirTemp("", "minte-gen-help-")
 	if err != nil {
 		return nil, func() {}, err
 	}
@@ -255,7 +255,7 @@ func (b *capBuffer) String() string {
 	return b.buf.String()
 }
 
-// resolveProgram finds bin the way a shell would (with mint-gen's own PATH),
+// resolveProgram finds bin the way a shell would (with minte-gen's own PATH),
 // so the runner's reduced PATH never picks a different program.
 func resolveProgram(bin string) (string, error) {
 	if strings.ContainsRune(bin, '/') {
@@ -264,7 +264,7 @@ func resolveProgram(bin string) (string, error) {
 	return exec.LookPath(bin)
 }
 
-// CollectHelp reads everything mint-gen can learn about a program: its man
+// CollectHelp reads everything minte-gen can learn about a program: its man
 // page, its --help (or -h) output, and the fuller help variants the help
 // itself points to (curl's "--help all", "--help-all"…).
 func CollectHelp(bin string) []HelpSource {
@@ -310,7 +310,7 @@ func CollectHelpNotes(bin string) ([]HelpSource, []string) {
 			notes = append(notes, fmt.Sprintf("%s crashed when asked for its help (%s), so only its man page was read; the program may be broken or missing a part", path, crash))
 		case errors.Is(runErr, os.ErrPermission):
 			notes = append(notes, fmt.Sprintf("could not run %s as %s to read its help (permission denied). "+
-				"mint-gen never runs a program as root just to read its help: run mint-gen as your normal user, "+
+				"minte-gen never runs a program as root just to read its help: run minte-gen as your normal user, "+
 				"or use a copy of the program that user can run.", path, r.user()))
 		default:
 			notes = append(notes, path+" printed no help for --help or -h")

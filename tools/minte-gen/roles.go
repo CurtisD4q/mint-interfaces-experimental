@@ -26,7 +26,7 @@ type argCase struct {
 	Flag        string
 	Kind        appkit.FlagKind
 	Placeholder Placeholder
-	Desc        string // the description, without mint-gen's " (-x)" suffix
+	Desc        string // the description, without minte-gen's " (-x)" suffix
 	Pathish     bool   // the value is a file or folder (and not clearly something else)
 	Dirish      bool   // …a folder
 }

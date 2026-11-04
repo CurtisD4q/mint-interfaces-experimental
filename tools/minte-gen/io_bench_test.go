@@ -1,6 +1,6 @@
 package main
 
-// The I/O benchmark: does mint-gen work out where a program's output goes?
+// The I/O benchmark: does minte-gen work out where a program's output goes?
 // It runs only when asked:
 //
 //	MINT_IO_BENCH=1 go test -run TestIOBenchmark -v .

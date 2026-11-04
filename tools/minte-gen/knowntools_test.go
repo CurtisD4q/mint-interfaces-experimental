@@ -21,7 +21,7 @@ func withToolDirs(t *testing.T, dirs ...string) {
 // privateDir is a folder only this user can change (inside sticky /tmp).
 func privateToolDir(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "mint-gen-tools-")
+	dir, err := os.MkdirTemp("", "minte-gen-tools-")
 	if err != nil {
 		t.Fatal(err)
 	}

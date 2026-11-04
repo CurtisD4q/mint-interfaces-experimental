@@ -45,7 +45,7 @@ func printSafetyReport(w io.Writer, spec appkit.ToolSpec) {
 	}
 }
 
-// stripFlag drops the " (-x)" suffix mint-gen adds to labels.
+// stripFlag drops the " (-x)" suffix minte-gen adds to labels.
 func stripFlag(label, flag string) string {
 	return strings.TrimSuffix(label, " ("+flag+")")
 }

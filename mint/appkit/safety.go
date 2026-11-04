@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Safety defaults applied to every ToolSpec by New (and by mint-gen when it
+// Safety defaults applied to every ToolSpec by New (and by minte-gen when it
 // writes spec.go), so that a generated interface never runs a command the
 // user did not ask for, and asks properly before one that cannot be undone.
 
@@ -231,7 +231,7 @@ func (s ToolSpec) CanReadState() bool {
 var secretWords = []string{"password", "passwd", "passphrase", "pass phrase", "secret", "token", "api key", "api-key", "apikey", "credential"}
 
 // LooksSecret reports whether a flag, its label or hint names a secret value.
-// mint-gen uses it to turn such flags into FlagSecret.
+// minte-gen uses it to turn such flags into FlagSecret.
 func LooksSecret(flag, label, hint string) bool {
 	text := strings.ToLower(flag + " " + label + " " + hint)
 	for _, w := range secretWords {

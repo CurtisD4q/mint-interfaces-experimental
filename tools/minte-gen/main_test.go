@@ -157,11 +157,11 @@ func TestScaffoldAppAndCLI(t *testing.T) {
 	if _, err := os.Stat(res.BinaryOut); err != nil {
 		t.Fatalf("expected compiled binary %s to exist: %v", res.BinaryOut, err)
 	}
-	// Verify mint-gen --run launches the compiled binary (passing --version so it exits 0 without a TTY)
+	// Verify minte-gen --run launches the compiled binary (passing --version so it exits 0 without a TTY)
 	if code := runCLI([]string{"--run", "--out", outDir, "demo", "--version"}); code != 0 {
 		t.Fatalf("expected --run demo --version to return 0, got %d", code)
 	}
-	// Verify mint-gen --remove removes the scaffolded app directory and binary
+	// Verify minte-gen --remove removes the scaffolded app directory and binary
 	if code := runCLI([]string{"--remove", "--out", outDir, "demo"}); code != 0 {
 		t.Fatalf("expected --remove demo to return 0, got %d", code)
 	}

@@ -34,7 +34,7 @@ const (
 	SaveNone         = "none"       // nothing worth saving (binary output, no output option)
 )
 
-// IOModel is mint-gen's single answer to "what does this tool read and
+// IOModel is minte-gen's single answer to "what does this tool read and
 // write?". It decides the output settings of the generated app, and each
 // decision keeps its reason (see --explain).
 type IOModel struct {
@@ -57,7 +57,7 @@ type IOModel struct {
 	Signals   behaviourSignals // what the help shows clearly about how it behaves
 	Batch     *batchMode       // the batch mode it runs in, when it is full-screen by default
 	Notes     []string         // where they disagree with the archetype, or change how Mint handles it
-	HelpRead  []string         // the help mint-gen read ("man page", "--help", "-h (the help says…)")
+	HelpRead  []string         // the help minte-gen read ("man page", "--help", "-h (the help says…)")
 	HelpNotes []string         // help that could not be read, and why
 }
 
@@ -209,7 +209,7 @@ func applyIOModel(spec *appkit.ToolSpec, m IOModel) {
 	}
 }
 
-// printIOModel explains the model, for mint-gen --explain. Everything that
+// printIOModel explains the model, for minte-gen --explain. Everything that
 // came from a help text or a file is cleaned of control characters first.
 func printIOModel(w io.Writer, m IOModel, spec appkit.ToolSpec) {
 	p := func(format string, a ...any) { fmt.Fprint(w, safeTerminalText(fmt.Sprintf(format, a...))+"\n") }

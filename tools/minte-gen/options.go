@@ -131,7 +131,7 @@ func (p Placeholder) IsNotFile() bool {
 	return reNonFileArg.MatchString(p.Word) || reNonFileArg.MatchString(lastWordPart(p.Word))
 }
 
-// OptionText is what one option line of a help text says, before mint-gen
+// OptionText is what one option line of a help text says, before minte-gen
 // decides how to show the option.
 type OptionText struct {
 	Names       []string // every spelling on the line: "-o", "--output"

@@ -28,7 +28,7 @@ func TestScaffoldWritesReorderSpec(t *testing.T) {
 	}
 }
 
-// mint-gen offers the rule order screen for the tools Mint can reorder.
+// minte-gen offers the rule order screen for the tools Mint can reorder.
 func TestParserAttachesReorder(t *testing.T) {
 	for bin, want := range map[string]string{"iptables": "iptables", "nft": "nft", "ufw": "ufw"} {
 		spec, _ := ParseManAndHelpIO(bin, "", "Usage: "+bin+" [options]\n")

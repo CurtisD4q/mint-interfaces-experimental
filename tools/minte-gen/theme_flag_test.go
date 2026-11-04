@@ -10,7 +10,7 @@ import (
 	"github.com/CurtisD4q/Mint-Interfaces/mint/theme"
 )
 
-// mint-gen --theme NAME saves the theme for every Mint app, and builds
+// minte-gen --theme NAME saves the theme for every Mint app, and builds
 // nothing into an app.
 func TestThemeFlagSetsTheThemeForEveryApp(t *testing.T) {
 	old := theme.ConfigPath
@@ -18,7 +18,7 @@ func TestThemeFlagSetsTheThemeForEveryApp(t *testing.T) {
 	t.Cleanup(func() { theme.ConfigPath = old })
 
 	if code := runCLI([]string{"--theme", "Nord"}); code != 0 {
-		t.Fatalf("mint-gen --theme Nord gave exit %d", code)
+		t.Fatalf("minte-gen --theme Nord gave exit %d", code)
 	}
 	if got := theme.Current(); got != "nord" {
 		t.Fatalf("saved theme %q, want nord", got)

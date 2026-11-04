@@ -35,7 +35,7 @@ var helpCrashSigns = []*regexp.Regexp{
 
 var helpOptionLine = regexp.MustCompile(`(?m)^\s{0,12}-{1,2}[A-Za-z0-9]`)
 
-// helpCapture runs a program for its manual the way mint-gen does: never
+// helpCapture runs a program for its manual the way minte-gen does: never
 // through a shell, in a new session with no terminal and stdin closed, in
 // an empty folder that is also HOME, with a cleaned environment, a time
 // limit, and never as root. The manual itself is not truncated: the time

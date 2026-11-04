@@ -1,6 +1,6 @@
 package main
 
-// The archetype benchmark: how well mint-gen recognises the archetype of a
+// The archetype benchmark: how well minte-gen recognises the archetype of a
 // program it has no list entry for. It runs only when asked:
 //
 //	MINT_ARCHETYPE_BENCH=1     go test -run TestArchetypeBenchmark -v .   # listed and bench programs
@@ -12,7 +12,7 @@ package main
 // programs may be looked at while improving the rules; the untouched and
 // fresh programs are only ever measured.
 //
-// Help is read the way mint-gen reads it (CollectHelp, sandboxed) and
+// Help is read the way minte-gen reads it (CollectHelp, sandboxed) and
 // cached in $MINT_TEMPLATE_BENCH_CACHE (an absolute path; default: a folder
 // in the system temp dir). No help text is committed.
 

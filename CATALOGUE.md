@@ -622,18 +622,18 @@ func tableExample(rawLines []string) mint.Row {
 }
 ```
 
-## Part E: Automated Scaffolding with `mint/appkit` and `tools/mint-gen` (38 Archetypes · Mixins)
+## Part E: Automated Scaffolding with `mint/appkit` and `tools/minte-gen` (38 Archetypes · Mixins)
 
 For rapid wrapping of compatible CLI programs, `mint/appkit` provides a declarative runtime built on **38 archetypes** (what kind of program a tool is) and **composable mixins** (add-ons):
 
-- **38 archetypes (`appkit.ArchetypeDef`, `appkit.AllArchetypeDefs`)**: Ask, Look up, Inspect, List, Search, Query, Compare, Read, Watch, Follow, Record, Record sound, Probe, Audit, Measure, Convert, Filter, Pack, Generate, Build, Transfer, Present, Edit files, Mirror, Settings, Device, Rules, Control, Signal, Records, History, Backup, Toolkit, Wrap, Schedule, Serve, Session and General. Setting `ArchetypeID: "probe"` on `appkit.ToolSpec` applies the archetype's add-ons, target label and default profiles (see `templates/README.md` or run `go run ./tools/mint-gen --list-archetypes`). `MainScreen` is one screen: the input comes from what the archetype takes (a target, two inputs, or subcommand tabs when the spec has them), the run comes from how it runs (once, a live poll when it refreshes, or a state editor for settings, device and rules), and the result stays on the page when the archetype shows one.
+- **38 archetypes (`appkit.ArchetypeDef`, `appkit.AllArchetypeDefs`)**: Ask, Look up, Inspect, List, Search, Query, Compare, Read, Watch, Follow, Record, Record sound, Probe, Audit, Measure, Convert, Filter, Pack, Generate, Build, Transfer, Present, Edit files, Mirror, Settings, Device, Rules, Control, Signal, Records, History, Backup, Toolkit, Wrap, Schedule, Serve, Session and General. Setting `ArchetypeID: "probe"` on `appkit.ToolSpec` applies the archetype's add-ons, target label and default profiles (see `templates/README.md` or run `go run ./tools/minte-gen --list-archetypes`). `MainScreen` is one screen: the input comes from what the archetype takes (a target, two inputs, or subcommand tabs when the spec has them), the run comes from how it runs (once, a live poll when it refreshes, or a state editor for settings, device and rules), and the result stays on the page when the archetype shows one.
 
 - **Composable Mixins** — the original 8 (`appkit.Mixins`):
   - `WithFileOutput` (`OutputsFile`, `OutputFlag`, `DefaultExt`), `WithTableOutput` (`TableOutput`, `TableColumns`), `WithCollapsibleOutput` (`CollapsibleOutput`, `ChunkSize`), `WithProfiles` (`Profiles`), `WithDynamicChoices` (`FlagSpec.ChoicesCmd`), `WithRootAuth` (`NeedsRoot`), `WithConfirm` (`ConfirmRun`), and `WithHistory` (`KeepHistory`).
-  - Each mixin registers itself (`registerMixin` in the file that implements it) with the `ToolSpec` fields that switch it on and an optional `Validate`. `appkit.MixinInfos()` lists them all, `ToolSpec.EnabledMixinNames()` lists those a spec uses, and `ToolSpec.Validate()` checks their settings; mint-gen refuses to write a spec that fails it.
+  - Each mixin registers itself (`registerMixin` in the file that implements it) with the `ToolSpec` fields that switch it on and an optional `Validate`. `appkit.MixinInfos()` lists them all, `ToolSpec.EnabledMixinNames()` lists those a spec uses, and `ToolSpec.Validate()` checks their settings; minte-gen refuses to write a spec that fails it.
 - **Add-ons for the other program shapes** — 7 more, each switched on by one `ToolSpec` field:
 
-  | Add-on | Field | For | What it adds | mint-gen attaches it |
+  | Add-on | Field | For | What it adds | minte-gen attaches it |
   |---|---|---|---|---|
   | `WithDiff` | `Diff *DiffSpec` | Compare: `diff`, `cmp` | Makes the tool print a format Mint reads (`-u`, `cmp -l`) and shows the two sides in columns, hunk by hunk. Exit 1 means "differ", not failure | yes |
   | `WithFindings` | `Findings *FindingsSpec` | Audit: `shellcheck`, `lynis`, `trivy`, `semgrep` | Findings grouped by severity, file or rule, with source lines around each (only from files inside the scanned target) and what's new since the last run | yes |
@@ -644,7 +644,7 @@ For rapid wrapping of compatible CLI programs, `mint/appkit` provides a declarat
   | `WithReorder` | `Reorder *ReorderSpec` | Rules: `iptables`, `ip6tables`, `nft`, `ufw`, `ip rule` | Move rules, review the exact commands, apply. The current rules are saved to a file first; the old order comes back by itself unless the user keeps the new one within 30 s, or quits first. `ip route` is refused: routes have no order | yes |
 
   The engines behind them are packages of their own, usable without appkit: `mint/diff`, `mint/findings`, `mint/fileplan`, `mint/follow`, `mint/procnet`, `mint/transcript` and `mint/reorder`. `appkit.KnownDiffSpec`, `KnownFindingsSpec`, `KnownPreviewSpec`, `KnownFollowSpec`, `KnownServiceSpec`, `KnownTranscriptSpec` and `KnownReorderSpec` return the settings for the programs Mint knows.
-- **Older apps**: the old 28 templates are gone. A spec that still names one (`Template: "T12"`) no longer builds; give it an `ArchetypeID` instead (`mint-gen --list-archetypes`).
+- **Older apps**: the old 28 templates are gone. A spec that still names one (`Template: "T12"`) no longer builds; give it an `ArchetypeID` instead (`minte-gen --list-archetypes`).
 
 ```go
 func appkitExample() appkit.ToolSpec {
@@ -689,7 +689,7 @@ func appkitAddonExamples() []appkit.ToolSpec {
 }
 ```
 
-`tools/mint-gen` checks whether a target binary can run inside a pure detached TUI (`--check <program>`), detects any CLI tool's archetype (`DetectArchetype`, overridable with `--archetype <archetype>`), and parses its `man` page and `--help` output into a standalone `apps/<tool>/` module (`go.mod`, `main.go`, `spec.go`, `<tool>-mint.el`).
+`tools/minte-gen` checks whether a target binary can run inside a pure detached TUI (`--check <program>`), detects any CLI tool's archetype (`DetectArchetype`, overridable with `--archetype <archetype>`), and parses its `man` page and `--help` output into a standalone `apps/<tool>/` module (`go.mod`, `main.go`, `spec.go`, `<tool>-mint.el`).
 
 ## Part C: Rules
 

@@ -29,12 +29,12 @@ func TestPrintArchetypeChoice(t *testing.T) {
 	if s := out("nmap", ArchetypeChoice{ID: "probe", Confidence: ConfidenceListed}, ""); !strings.Contains(s, "Probe") || !strings.Contains(s, "listed") {
 		t.Errorf("listed: %q", s)
 	}
-	if s := out("tree", ArchetypeChoice{ID: "list", Confidence: ConfidenceClear}, ""); !strings.Contains(s, "clear choice") || !strings.Contains(s, "mint-gen --explain tree") || strings.Contains(s, "CLOSE") {
+	if s := out("tree", ArchetypeChoice{ID: "list", Confidence: ConfidenceClear}, ""); !strings.Contains(s, "clear choice") || !strings.Contains(s, "minte-gen --explain tree") || strings.Contains(s, "CLOSE") {
 		t.Errorf("clear: %q", s)
 	}
 	close := ArchetypeChoice{ID: "convert", Confidence: ConfidenceClose, Alternatives: []appkit.ArchetypeID{"search", "look-up"}}
 	s := out("fzf", close, "")
-	for _, want := range []string{"CLOSE CALL", "also likely: Search, Look up (look-up)", "mint-gen --explain fzf", "mint-gen --archetype search fzf"} {
+	for _, want := range []string{"CLOSE CALL", "also likely: Search, Look up (look-up)", "minte-gen --explain fzf", "minte-gen --archetype search fzf"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("close call: missing %q in %q", want, s)
 		}
@@ -45,7 +45,7 @@ func TestPrintArchetypeChoice(t *testing.T) {
 	// A name that is not a plain word is quoted in the commands, and control
 	// characters never reach the terminal.
 	s = out("my tool;rm -rf ~\x1b[2J", close, "")
-	if !strings.Contains(s, "mint-gen --explain 'my tool;rm -rf ~") {
+	if !strings.Contains(s, "minte-gen --explain 'my tool;rm -rf ~") {
 		t.Errorf("not quoted: %q", s)
 	}
 	if strings.ContainsAny(s, "\x1b\x07") {

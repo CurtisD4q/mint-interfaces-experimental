@@ -11,7 +11,7 @@ func TestResultsGoInTheAppsOwnFolder(t *testing.T) {
 	t.Setenv("HOME", home)
 	appDir := filepath.Join(t.TempDir(), "apps", "mytool")
 	os.MkdirAll(appDir, 0o755)
-	for _, f := range []string{"go.mod", "main.go", "spec.go", ".mint-gen", "mytool-mint", "mytool-mint.el"} {
+	for _, f := range []string{"go.mod", "main.go", "spec.go", ".minte-gen", "mytool-mint", "mytool-mint.el"} {
 		os.WriteFile(filepath.Join(appDir, f), []byte("x"), 0o644)
 	}
 

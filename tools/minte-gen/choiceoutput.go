@@ -50,7 +50,7 @@ func printArchetypeChoice(w io.Writer, program string, c ArchetypeChoice, forced
 	case ConfidenceListed:
 		p("Archetype: %s, listed for this program", archetypeLabel(c.ID))
 	case ConfidenceClear:
-		p("Archetype: %s, a clear choice. Why: mint-gen --explain %s", archetypeLabel(c.ID), prog)
+		p("Archetype: %s, a clear choice. Why: minte-gen --explain %s", archetypeLabel(c.ID), prog)
 	default:
 		also := ""
 		if len(c.Alternatives) > 0 {
@@ -61,11 +61,11 @@ func printArchetypeChoice(w io.Writer, program string, c ArchetypeChoice, forced
 			also = "; also likely: " + strings.Join(names, ", ")
 		}
 		p("Archetype: %s, a CLOSE CALL%s", archetypeLabel(c.ID), also)
-		change := "mint-gen --list-archetypes"
+		change := "minte-gen --list-archetypes"
 		if len(c.Alternatives) > 0 {
-			change = fmt.Sprintf("mint-gen --archetype %s %s", c.Alternatives[0], prog)
+			change = fmt.Sprintf("minte-gen --archetype %s %s", c.Alternatives[0], prog)
 		}
-		p("  Check why: mint-gen --explain %s    Change it: %s", prog, change)
+		p("  Check why: minte-gen --explain %s    Change it: %s", prog, change)
 	}
 }
 
@@ -103,7 +103,7 @@ func explainArchetypeChoice(w io.Writer, program string, c ArchetypeChoice) {
 	}
 	p("             (it leads the next by %s; %s or more is a clear choice)", points(c.Lead), points(clearLead))
 	for _, a := range c.Alternatives {
-		p("  Instead:    mint-gen --archetype %s %s   (%s)", a, prog, archetypeLabel(a))
+		p("  Instead:    minte-gen --archetype %s %s   (%s)", a, prog, archetypeLabel(a))
 	}
 }
 

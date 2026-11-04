@@ -11,7 +11,7 @@ import (
 	"github.com/CurtisD4q/Mint-Interfaces/mint/appkit"
 )
 
-// Starting an app as root. mint-gen never sees a password: it only asks
+// Starting an app as root. minte-gen never sees a password: it only asks
 // whether to start with sudo, and sudo's own prompt asks for the password.
 
 // Seams for tests.

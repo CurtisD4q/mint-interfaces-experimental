@@ -37,24 +37,24 @@ go run ./examples/features  # the additions, including a background job
 
 ## Quickstart: Wrap any CLI program in 3 steps
 
-You can generate and compile a full Mint interface for any installed command-line program in three steps (see [Turnkey CLI apps and automated scaffolding](#turnkey-cli-apps-mintappkit-and-automated-scaffolding-toolsmint-gen) and [Standalone binaries and flags](#standalone-binaries-and-flags) below for full details):
+You can generate and compile a full Mint interface for any installed command-line program in three steps (see [Turnkey CLI apps and automated scaffolding](#turnkey-cli-apps-mintappkit-and-automated-scaffolding-toolsminte-gen) and [Standalone binaries and flags](#standalone-binaries-and-flags) below for full details):
 
 1. **Check compatibility (optional):** Verify the program works in a pure TUI and inspect or cache your terminal's capability profile in `~/.config/mint-interfaces/termcaps.json` (`--list-archetypes` lists the 38 archetypes; `--probe-term` refreshes the terminal probe):
    ```sh
-   go run ./tools/mint-gen --check nmap
+   go run ./tools/minte-gen --check nmap
    ```
 2. **Generate and compile in one command:** Parse `man` + `--help`, recognise what kind of program it is (one of 38 archetypes), scaffold `apps/<tool>/`, and build the static binary:
    ```sh
-   go run ./tools/mint-gen --build nmap
+   go run ./tools/minte-gen --build nmap
    ```
 3. **Run your new interface:** Launch the standalone binary in your terminal (or via `M-x nmap-mint` in [Emacs](#running-from-emacs-emacsmintel)):
    ```sh
    ./apps/nmap/nmap-mint
    ```
 
-### Global install: Run `mint-gen` from anywhere
+### Global install: Run `minte-gen` from anywhere
 
-Move the `mint-interfaces` folder to `/usr/local/share/mint-interfaces` and install `/usr/local/bin/mint-gen` so you can check, build, and run any tool's interface from any directory:
+Move the `mint-interfaces` folder to `/usr/local/share/mint-interfaces` and install `/usr/local/bin/minte-gen` so you can check, build, and run any tool's interface from any directory:
 
 1. Move the repository to `/usr/local/share/mint-interfaces` and make `apps/` writable by your user so builds do not need `sudo`:
    ```sh
@@ -62,55 +62,55 @@ Move the `mint-interfaces` folder to `/usr/local/share/mint-interfaces` and inst
    sudo mkdir -p /usr/local/share/mint-interfaces/apps
    sudo chown -R "$USER:$USER" /usr/local/share/mint-interfaces/apps
    ```
-2. Install `/usr/local/bin/mint-gen` to invoke `mint-gen` from `/usr/local/share/mint-interfaces`:
+2. Install `/usr/local/bin/minte-gen` to invoke `minte-gen` from `/usr/local/share/mint-interfaces`:
    ```sh
-   sudo tee /usr/local/bin/mint-gen >/dev/null << 'EOF'
+   sudo tee /usr/local/bin/minte-gen >/dev/null << 'EOF'
    #!/usr/bin/env sh
-   exec go -C /usr/local/share/mint-interfaces run ./tools/mint-gen "$@"
+   exec go -C /usr/local/share/mint-interfaces run ./tools/minte-gen "$@"
    EOF
-   sudo chmod +x /usr/local/bin/mint-gen
+   sudo chmod +x /usr/local/bin/minte-gen
    ```
 
 Once installed, the steps from any directory are:
 
 1. **Check compatibility (optional):** Verify the program works in a pure TUI and cache your terminal's capability profile.
    ```sh
-   mint-gen --check nmap
+   minte-gen --check nmap
    ```
 2. **Generate and compile:** Parse `man` and `--help`, scaffold `apps/nmap/`, and compile the static binary.
    ```sh
-   mint-gen --build nmap
+   minte-gen --build nmap
    ```
 3. **Run your new interface:** Launch the compiled `nmap` interface (building it first if needed).
    ```sh
-   mint-gen --run nmap
+   minte-gen --run nmap
    ```
 4. **Remove a build (optional):** Delete the generated `apps/nmap/` folder and compiled binary.
    ```sh
-   mint-gen --remove nmap
+   minte-gen --remove nmap
    ```
 5. **List your apps:** Show the apps in the repository's `apps/` folder, one per line.
    ```sh
-   mint-gen --list
+   minte-gen --list
    ```
-6. **Remove every app (optional):** List every app mint-gen built in `apps/`, ask to confirm (y/n), then remove them all. Anything other than `y` or `yes` removes nothing.
+6. **Remove every app (optional):** List every app minte-gen built in `apps/`, ask to confirm (y/n), then remove them all. Anything other than `y` or `yes` removes nothing.
    ```sh
-   mint-gen --purge
+   minte-gen --purge
    ```
-7. **See what mint-gen understood (optional):** which archetype it chose, how sure it is and the evidence that decided it, what the program reads and writes, where "Save output to file" will send the file, and the evidence behind every option's role.
+7. **See what minte-gen understood (optional):** which archetype it chose, how sure it is and the evidence that decided it, what the program reads and writes, where "Save output to file" will send the file, and the evidence behind every option's role.
    ```sh
-   mint-gen --explain ffmpeg
+   minte-gen --explain ffmpeg
    ```
 8. **Set the colours for every app (optional):** save one of the seven [themes](#colour) for every Mint app.
    ```sh
-   mint-gen --theme nord
+   minte-gen --theme nord
    ```
 
-Other flags: `--archetype` chooses the archetype yourself, `--out DIR` builds somewhere other than `apps/<tool>`, `--force` builds a program the compatibility check refused, `--sudo` / `--no-sudo` answer `--run`'s sudo question in advance, `--root` points at the Mint-Interfaces folder when it isn't found automatically, and `--tui` opens mint-gen's own interface.
+Other flags: `--archetype` chooses the archetype yourself, `--out DIR` builds somewhere other than `apps/<tool>`, `--force` builds a program the compatibility check refused, `--sudo` / `--no-sudo` answer `--run`'s sudo question in advance, `--root` points at the Mint-Interfaces folder when it isn't found automatically, and `--tui` opens minte-gen's own interface.
 
-**Apps are always built inside Mint-Interfaces.** mint-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then from where the `mint-gen` program itself is (so a link on your `PATH` to a `mint-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `/usr/local/share/mint-interfaces`. If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
+**Apps are always built inside Mint-Interfaces.** minte-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then from where the `minte-gen` program itself is (so a link on your `PATH` to a `minte-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `/usr/local/share/mint-interfaces`. If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
 
-`mint-gen --help` is the one guide for Mint-Interfaces. It covers scaffolding and running an app (`mint-gen ps`, `mint-gen --build ps`, `mint-gen --run ps`, and the other flags), then how to use the app: the home menu, setting options and running a command, pane keys (Tab, Shift-Tab, `[`, `]`, `|`, and a click to focus), table keys (left and right to scroll sideways, H and L to narrow or widen a column), Presets, Run History, and Manual / `--man` for the program's full manual. The flag list follows the guide. A generated app's own `--help` stays a short usage list; `--man` still opens that app's Manual screen.
+`minte-gen --help` is the one guide for Mint-Interfaces. It covers scaffolding and running an app (`minte-gen ps`, `minte-gen --build ps`, `minte-gen --run ps`, and the other flags), then how to use the app: the home menu, setting options and running a command, pane keys (Tab, Shift-Tab, `[`, `]`, `|`, and a click to focus), table keys (left and right to scroll sideways, H and L to narrow or widen a column), Presets, Run History, and Manual / `--man` for the program's full manual. The flag list follows the guide. A generated app's own `--help` stays a short usage list; `--man` still opens that app's Manual screen.
 
 ## ~ and $VAR in boxes
 
@@ -126,9 +126,9 @@ Mint does not start a shell for this. `|`, `;`, `&&`, `$(...)`, backticks and gl
 |---|---|---|---|
 | Go | 1.21 | 1.24 / stable | Only to build apps. Standard library only: no outside modules, not even `golang.org/x`. |
 | Operating system | Linux, macOS, the BSDs | — | Windows through WSL only. |
-| Terminal | 256 colours + SGR mouse | — | Any modern terminal. Mint remembers what it learned about yours; re-probe with `mint-gen --probe-term`. |
+| Terminal | 256 colours + SGR mouse | — | Any modern terminal. Mint remembers what it learned about yours; re-probe with `minte-gen --probe-term`. |
 | Locale and font | UTF-8; box-drawing glyphs | — | Without a UTF-8 locale, apps draw in ASCII. A font missing the glyphs shows gaps or boxes. |
-| `man` | any | — | mint-gen reads a program's man page as well as its `--help`; without `man` it uses `--help` alone. |
+| `man` | any | — | minte-gen reads a program's man page as well as its `--help`; without `man` it uses `--help` alone. |
 | Emacs | 27.1 | 30.1 | For `emacs/mint.el`. 31 untested as of v1.0. |
 | vterm (optional) | — | libvterm 0.3.3 | For running apps in `vterm`; see [Running from Emacs](#running-from-emacs-emacsmintel). |
 | Vim | 9.1 | 9.1 | `set ttimeout ttimeoutlen=50`, or Esc waits a second. |
@@ -283,7 +283,7 @@ There are seven themes. A theme colours the frame, titles, selection and status 
 
 #### Choosing a theme
 
-- **For every app, from mint-gen.** `mint-gen --theme NAME` saves the theme for every Mint app, for example `mint-gen --theme nord`. It writes `theme.conf` (below), the same as the Theme screen's **Use this theme**, and builds nothing. Apps that are open use it when they next start. It can go with another command too: `mint-gen --theme nord --build nmap` saves the theme, then builds nmap as usual.
+- **For every app, from minte-gen.** `minte-gen --theme NAME` saves the theme for every Mint app, for example `minte-gen --theme nord`. It writes `theme.conf` (below), the same as the Theme screen's **Use this theme**, and builds nothing. Apps that are open use it when they next start. It can go with another command too: `minte-gen --theme nord --build nmap` saves the theme, then builds nmap as usual.
 - **The Theme screen.** Every app's home list ends with **Theme**. Choosing a theme shows it straight away; **Use this theme** saves it for every Mint app, and leaving without saving (or **Undo preview**) puts the old colours back. An app can leave the item out with `App.NoThemeItem`.
 - **For one run.** Start any app with `--theme NAME` (or `--theme=NAME`), for example `nmap-mint --theme dracula`. Nothing is saved. It can come before Mint's other flags: `nmap-mint --theme nord --screen Run`.
 
@@ -292,7 +292,7 @@ Only the seven names above are accepted; any other name is refused with the list
 There is one saved theme, shared by every Mint app. Which theme an app uses, strongest first:
 
 1. `--theme NAME` on the app's command line (that run only)
-2. the theme saved in `theme.conf`, by `mint-gen --theme`, the Theme screen or by hand
+2. the theme saved in `theme.conf`, by `minte-gen --theme`, the Theme screen or by hand
 3. `default`, when nothing is saved
 
 `MINT_PALETTE` (below) is applied on top of the theme the file picks. Inside Emacs, `mint.el` passes the Emacs theme's colours this way, so apps it launches match Emacs rather than the saved theme; set `mint-match-theme` to `nil` to use the saved theme there too.
@@ -322,7 +322,7 @@ selbg  = 60 60 70
 err    = 220 90 90
 ```
 
-**Under sudo.** Run as root, `~` is `/root`, so an app looks for `/root/.config/mint-interfaces/theme.conf`. When root has no theme file of its own, Mint uses the theme file of the user who ran `sudo` (`SUDO_USER`). That file is only read, never written: saving a theme as root (`sudo mint-gen --theme nord`, or the Theme screen in an app run with sudo) writes root's own file, and mint-gen says so. To set your own theme, run `mint-gen --theme` without sudo. It is used only when it is a regular file (not a link) owned by that user or by root, and at most 64 KiB of it is read.
+**Under sudo.** Run as root, `~` is `/root`, so an app looks for `/root/.config/mint-interfaces/theme.conf`. When root has no theme file of its own, Mint uses the theme file of the user who ran `sudo` (`SUDO_USER`). That file is only read, never written: saving a theme as root (`sudo minte-gen --theme nord`, or the Theme screen in an app run with sudo) writes root's own file, and minte-gen says so. To set your own theme, run `minte-gen --theme` without sudo. It is used only when it is a regular file (not a link) owned by that user or by root, and at most 64 KiB of it is read.
 
 #### Terminals, MINT_PALETTE and program colours
 
@@ -371,7 +371,7 @@ mint/diff/, findings/, fileplan/, follow/, transcript/, reorder/, procnet/
 templates/app/                 starter for a new interface (main.go, cli.go, app.el)
 templates/config/, runner/, scanner/, monitor/, explorer/, suite/
                                appkit starters for common archetypes (templates/README.md)
-tools/mint-gen/                man-page & --help interface generator + TUI exclusion checker
+tools/minte-gen/                man-page & --help interface generator + TUI exclusion checker
 emacs/mint.el                  launching apps from Emacs
 emacs/mint-tests.el            tests for mint.el
 CATALOGUE.md                   how to build an interface for a program
@@ -537,35 +537,35 @@ python3 tools/check_catalogue.py
 - **`mint.Collapsible` and `mint.CollapsibleText`**: place foldable groups (`▸ Title` / `▾ Title`) directly inside any `Section.Rows` slice. When `Lines` and `ChunkSize` are set, massive text outputs automatically split into nested collapsible chunks (`Lines 1–100`, `Lines 101–200`, …) alongside an action to open the full text in `mint.ViewLog`.
 - **`mint.Table` and `mint.ParseTable` (`mint.ParseColumns`)**: format multi-column data into aligned, selectable Mint rows, or parse whitespace-, tab-, pipe-, and box-drawing-aligned CLI tables (`ps`, `df`, `ss`, `ls -l`, `nmap`) automatically.
 
-### Turnkey CLI apps (`mint/appkit`) and automated scaffolding (`tools/mint-gen`)
+### Turnkey CLI apps (`mint/appkit`) and automated scaffolding (`tools/minte-gen`)
 
 `mint/appkit` provides a declarative runtime built on **38 archetypes** (what kind of program a tool is) and **composable add-ons** (see [`templates/README.md`](templates/README.md)):
 
-- **38 archetypes** (`appkit.AllArchetypeDefs`, listed by `mint-gen --list-archetypes`): Ask, Look up, Inspect, List, Search, Query, Compare, Read, Watch, Follow, Record, Record sound, Probe, Audit, Measure, Convert, Filter, Pack, Generate, Build, Transfer, Present, Edit files, Mirror, Settings, Device, Rules, Control, Signal, Records, History, Backup, Toolkit, Wrap, Schedule, Serve, Session and General. Each says what a program takes, how it runs and what it shows, and wants add-ons by weight (0 to 1). Its blueprint is every add-on wanted at 0.5 or more. The weights are there so a design style can later be blended in. `MainScreen` builds one screen from that blueprint: the input (a target, two inputs, or subcommand tabs), the run (once, a live poll, or a state editor), and the result. The older 28 templates (`T01`–`T28`) are gone; a spec that still names one (`Template:`) no longer builds and needs an `ArchetypeID`.
-- **Composable Mixins** (15; `go run ./tools/mint-gen --list-archetypes` lists them):
+- **38 archetypes** (`appkit.AllArchetypeDefs`, listed by `minte-gen --list-archetypes`): Ask, Look up, Inspect, List, Search, Query, Compare, Read, Watch, Follow, Record, Record sound, Probe, Audit, Measure, Convert, Filter, Pack, Generate, Build, Transfer, Present, Edit files, Mirror, Settings, Device, Rules, Control, Signal, Records, History, Backup, Toolkit, Wrap, Schedule, Serve, Session and General. Each says what a program takes, how it runs and what it shows, and wants add-ons by weight (0 to 1). Its blueprint is every add-on wanted at 0.5 or more. The weights are there so a design style can later be blended in. `MainScreen` builds one screen from that blueprint: the input (a target, two inputs, or subcommand tabs), the run (once, a live poll, or a state editor), and the result. The older 28 templates (`T01`–`T28`) are gone; a spec that still names one (`Template:`) no longer builds and needs an `ArchetypeID`.
+- **Composable Mixins** (15; `go run ./tools/minte-gen --list-archetypes` lists them):
   - The original 8: `WithFileOutput`, `WithTableOutput`, `WithCollapsibleOutput`, `WithProfiles`, `WithDynamicChoices`, `WithRootAuth`, `WithConfirm`, and `WithHistory`.
-  - 7 more, switched on when the program's own details are known: `WithDiff` (Compare: `diff`, `cmp`), `WithFindings` (Audit: `shellcheck`, `lynis`, SARIF), `WithPreview` (Edit files: `rm`, `cp`, `mv`, `rsync`), `WithFollow` (Follow: `tail -F`, `journalctl -f`), `WithService` (Serve: `python -m http.server`, `nc -l`), `WithTranscript` (Session: `psql`, `sqlite3`, `gdb`, `redis-cli`) and `WithReorder` (Rules: `iptables`, `nft`, `ufw`, `ip rule`). mint-gen attaches the ones that are safe to offer by itself; [`CATALOGUE.md`](CATALOGUE.md) Part E describes each.
+  - 7 more, switched on when the program's own details are known: `WithDiff` (Compare: `diff`, `cmp`), `WithFindings` (Audit: `shellcheck`, `lynis`, SARIF), `WithPreview` (Edit files: `rm`, `cp`, `mv`, `rsync`), `WithFollow` (Follow: `tail -F`, `journalctl -f`), `WithService` (Serve: `python -m http.server`, `nc -l`), `WithTranscript` (Session: `psql`, `sqlite3`, `gdb`, `redis-cli`) and `WithReorder` (Rules: `iptables`, `nft`, `ufw`, `ip rule`). minte-gen attaches the ones that are safe to offer by itself; [`CATALOGUE.md`](CATALOGUE.md) Part E describes each.
 
-`tools/mint-gen` checks whether a command can run inside a pure detached TUI, detects any CLI tool's archetype, and scaffolds a complete `apps/<tool>/` module (`go.mod`, `main.go`, `spec.go`, and `<tool>-mint.el`) from its `man` page and `--help` output.
+`tools/minte-gen` checks whether a command can run inside a pure detached TUI, detects any CLI tool's archetype, and scaffolds a complete `apps/<tool>/` module (`go.mod`, `main.go`, `spec.go`, and `<tool>-mint.el`) from its `man` page and `--help` output.
 
 #### Step-by-step: generating and running a Mint interface for any installed CLI program
 
 1. **Check compatibility (optional)**
    Verify that the program is installed and works inside a pure detached TUI (this also probes and caches your terminal's capability profile in `~/.config/mint-interfaces/termcaps.json` on first run; pass `--probe-term` anytime to force a fresh probe):
    ```bash
-   go run ./tools/mint-gen --check nmap
+   go run ./tools/minte-gen --check nmap
    ```
-   *(You can also run `go run ./tools/mint-gen --list-archetypes` to see the 38 archetypes and the add-ons.)*
+   *(You can also run `go run ./tools/minte-gen --list-archetypes` to see the 38 archetypes and the add-ons.)*
 
 2. **Generate and compile the interface in one command**
-   Run `mint-gen` with `--build` (or pass `--archetype probe` to choose the archetype yourself):
+   Run `minte-gen` with `--build` (or pass `--archetype probe` to choose the archetype yourself):
    ```bash
-   go run ./tools/mint-gen --build nmap
+   go run ./tools/minte-gen --build nmap
    ```
    Behind the scenes, this automatically:
    - Ensures your terminal capability profile is cached in `~/.config/mint-interfaces/termcaps.json` (keyed by `$TERM`, `$TERM_PROGRAM`, and `$TMUX`).
    - Reads `man nmap` and `nmap --help` to extract its summary, synopsis, target input, file-output flags (`-oN`, `-oX`, `-o`, etc.), subcommands, and option flags.
-   - Recognises what kind of program it is (for `nmap`, the **Probe** archetype: many targets, one result row each, with a results table, profiles, file output and history). A program on the archetype lists gets its listed archetype. Any other gets the archetype its behaviour and words point to: what its usage takes (`HOST...`, `PATTERN`, `FILE1 FILE2`, `COMMAND [ARG]...`, an interval), what its subcommands are called (install/remove, commit/log, start/stop), options such as `--follow` or `--listen`, and each archetype's phrases in its summary, description, usage and help. Clues and phrases alike count by where they were found: usage 30, summary 25, description 20, name 15, the rest of the help 10. It always gets one, marked as a clear choice or a close call; for a close call the build output names the likely alternatives and the `--archetype` command to switch. Measured blind (with the archetype lists switched off): on 153 installed programs never used for tuning (119 everyday ones and 34 for archetypes the other sets lacked), it chooses the right archetype for 114 (75%); 78% are marked clear choices, and those are right about 4 times in 5. On the 353 programs used for tuning it gets 280 right (79%), up from 274 before Signal, Record sound and Backup were split out and close List/Inspect calls were settled by table options (`MINT_ARCHETYPE_BENCH=final go test -run TestArchetypeBenchmark -v ./tools/mint-gen`).
+   - Recognises what kind of program it is (for `nmap`, the **Probe** archetype: many targets, one result row each, with a results table, profiles, file output and history). A program on the archetype lists gets its listed archetype. Any other gets the archetype its behaviour and words point to: what its usage takes (`HOST...`, `PATTERN`, `FILE1 FILE2`, `COMMAND [ARG]...`, an interval), what its subcommands are called (install/remove, commit/log, start/stop), options such as `--follow` or `--listen`, and each archetype's phrases in its summary, description, usage and help. Clues and phrases alike count by where they were found: usage 30, summary 25, description 20, name 15, the rest of the help 10. It always gets one, marked as a clear choice or a close call; for a close call the build output names the likely alternatives and the `--archetype` command to switch. Measured blind (with the archetype lists switched off): on 153 installed programs never used for tuning (119 everyday ones and 34 for archetypes the other sets lacked), it chooses the right archetype for 114 (75%); 78% are marked clear choices, and those are right about 4 times in 5. On the 353 programs used for tuning it gets 280 right (79%), up from 274 before Signal, Record sound and Backup were split out and close List/Inspect calls were settled by table options (`MINT_ARCHETYPE_BENCH=final go test -run TestArchetypeBenchmark -v ./tools/minte-gen`).
    - Maps every flag to the right Mint control (`Checkbox`, `Stepper`, `Select`, `Text`, or interactive path/repeatable browsers) and folds advanced flags into collapsible **More Options** and "(Advanced)" sections.
    - Reads what the help shows about how the program behaves. A program that draws its own full-screen interface (`htop`, `less`) is refused, unless it has a batch mode that prints plain text and exits: then the app runs it that way (`top -b -n 1` as a live view refreshed on a timer, `lynx -dump` once). A full-screen program built anyway with `--force` shows its command to run in a terminal instead of running it. A summary that says the program changes things (installs, removes, configures, kills processes…) makes the app ask before every run, and so do options that act on running processes by ID (`--pid` with `--signal`, `--priority` or `--class`), whatever the archetype.
    - Generates a self-contained folder at `apps/nmap/` (`go.mod`, `main.go`, `spec.go`, and `nmap-mint.el`) and compiles the static binary at `apps/nmap/nmap-mint` via `tools/build.sh`.
@@ -585,7 +585,7 @@ The library counts every character as one column, as the original does. Emoji su
 
 ## Security
 
-Generated interfaces are built to keep passwords, tokens and keys away from other users on the computer, off the disk and off the screen, and to stop commands that change or destroy things from running by accident. The rules below apply to every app built with `appkit` and `mint-gen`. The secure store underneath them can also be used on its own.
+Generated interfaces are built to keep passwords, tokens and keys away from other users on the computer, off the disk and off the screen, and to stop commands that change or destroy things from running by accident. The rules below apply to every app built with `appkit` and `minte-gen`. The secure store underneath them can also be used on its own.
 
 ### Safety rules every generated interface follows
 
@@ -595,14 +595,14 @@ Generated interfaces are built to keep passwords, tokens and keys away from othe
 - **Irreversible tools need the target typed to confirm.** `dd`, `shred`, `rm`, `wipefs`, `mkfs.*`, `kill`, `pkill`, `killall` and similar are marked `Irreversible`.
 - **Secrets stay secret.** Options whose value is a password, token or key are `FlagSecret`: asked for with a password dialog, kept for the session only (never in settings, presets or history), and masked in the command preview. Each secret takes the safest route the tool offers: standard input for a `--password-stdin` style option (never visible), then an environment variable such as `RESTIC_PASSWORD`, `PGPASSWORD` or `GH_TOKEN` (only you and root can read a program's environment), and only as a last resort the command line, where other users can see it with `ps`; then the app says so and asks before running. Environment variables come from a built-in list of well-known tools (restic, borg, kopia, duplicity, rclone, psql and the pg_ tools, gh, glab, sshpass) and from the man page's ENVIRONMENT section. Settings and history files are readable only by you.
 - **Secrets are hidden in the output.** Every secret a run uses, and any typed into a text box, is replaced by `••••••` in the program's output before it is shown, saved or used in a message. So are well-known token formats (GitHub, GitLab, AWS, Slack, Google, `sk-…` keys, private keys), `Authorization:` and API-key header values (such as the `Basic` header `curl -v` prints), and passwords in URLs. Mint keeps only a salted fingerprint of each secret for this, not the secret itself. Secrets shorter than 4 characters are not hidden, since they would blank out ordinary words. A file the program writes itself (through its own output option) is not changed.
-- **Sensitive results are kept private.** Each tool has a data level, shown as a badge: *sensitive* for packet captures, logs, security audits, database dumps and tracers, and *secret* for password managers and key and crypto tools. The level comes from the tool, its archetype (Look up, Follow, Record, Record sound, Audit and Backup are sensitive), what its help is about (keys and passwords make it secret; captured traffic, people and organisations, security findings and logs make it sensitive; this only ever raises a level, and a topic counts only when it clearly leads the other subjects of the help), or `ToolSpec.Data`. Options that print secrets (`--export-secret-keys`, `-d` "Decrypt data", `--show-password`) make a run secret, and so does output that contained a private key, a login token (JWT), a password hash or another recognised secret. For sensitive results, new results folders are private (0700), and so is the app's own folder once sensitive results are saved in it and result files, including ones the tool writes itself, are readable only by you. Secret tools keep results in a private in-memory folder by default ("Keep results in memory only"): `$XDG_RUNTIME_DIR`, cleared at logout, or `/dev/shm`, cleared at restart. "Encrypt the output" seals the output file (or the captured output) with a passphrase and removes the original. The Output Directory opens sealed files after asking for the passphrase, decrypted in memory only. `mint-gen`'s safety report shows the level and the revealing options.
+- **Sensitive results are kept private.** Each tool has a data level, shown as a badge: *sensitive* for packet captures, logs, security audits, database dumps and tracers, and *secret* for password managers and key and crypto tools. The level comes from the tool, its archetype (Look up, Follow, Record, Record sound, Audit and Backup are sensitive), what its help is about (keys and passwords make it secret; captured traffic, people and organisations, security findings and logs make it sensitive; this only ever raises a level, and a topic counts only when it clearly leads the other subjects of the help), or `ToolSpec.Data`. Options that print secrets (`--export-secret-keys`, `-d` "Decrypt data", `--show-password`) make a run secret, and so does output that contained a private key, a login token (JWT), a password hash or another recognised secret. For sensitive results, new results folders are private (0700), and so is the app's own folder once sensitive results are saved in it and result files, including ones the tool writes itself, are readable only by you. Secret tools keep results in a private in-memory folder by default ("Keep results in memory only"): `$XDG_RUNTIME_DIR`, cleared at logout, or `/dev/shm`, cleared at restart. "Encrypt the output" seals the output file (or the captured output) with a passphrase and removes the original. The Output Directory opens sealed files after asking for the passphrase, decrypted in memory only. `minte-gen`'s safety report shows the level and the revealing options.
 - **Passwords typed into text boxes are caught.** Before a run, the Extra arguments and Target boxes are checked for passwords in URLs (`https://user:pass@host`), `--password=…` / `--token …` style options, the tool's own secret options typed by hand, `--user name:pass`, `Authorization:` and API-key headers, `PASSWORD=…` assignments and well-known token formats. If one is found, the app explains that it will be visible on the command line, points to the tool's own secret option if there is one, and asks before running. Such values are hidden in the command preview, settings and history and are never written to disk; in the next session the box shows `••••••` and the app asks you to type it again rather than running with it.
-- **Mint never asks for your sudo password.** A tool that needs root runs when the whole app is started with sudo (`sudo apps/tcpdump/tcpdump`), so the password goes to sudo's own prompt before Mint starts. `mint-gen --run` asks "Start it with sudo? [y/N]" for tools that usually need root (answer in advance with `--sudo` or `--no-sudo`). The app's "Root access" section shows whether it runs as root and, if not, the exact command to restart it with sudo; when a run fails with "permission denied" or similar, the app says the same. Started with sudo, the app still keeps its settings, history and results in your home and makes them belong to you, not to root.
-- **`mint-gen` reads a program's help without trusting it.** To learn a program's options it runs `man` and the program's `--help` (or `-h`), plus fuller help such as curl's `--help all` or the `dig -h` that dig's `--help` points to, but only when the program's own help mentions it, only with help arguments from a fixed list, and at most six runs in all. Each run is passed as a list of arguments (never through a shell), in its own session with no terminal and input closed, inside an empty temporary folder that is also its `HOME`, with a cleaned environment (your tokens and passwords are not passed on), a 5-second limit and a 2 MB output cap. Anything it leaves running afterwards is stopped. It never runs as root: under sudo it runs as you, and as plain root it runs as `nobody`.
-- **The app writes only where mint-gen is sure.** For each tool, mint-gen works out what it reads and writes, from three sources: the options' descriptions, its usage line, and the known-tools list. "Save output to file" then works one of three ways. The tool may write the file itself through its output option (`curl -o`) or as its last argument (`ffmpeg … out.mkv`). Otherwise Mint saves what the tool prints. A path is only passed to an option or argument when that's certain: a listed option, a clearly described one, or an output argument confirmed by the known-tools list. Anything unclear is shown as a path the app never writes to. For tools that only print progress messages (gzip, tar, ffmpeg), saving those messages is labelled as such and off by default. The output file's extension comes from the known-tools list, a format named in the output option's description, or the archetype. Text that Mint saves is never given a binary extension like `.pcap`. When you choose an output format in the app (pandoc `-t docx`, a `--json` switch, or the same typed into Extra arguments), the automatically named file follows it (`.docx`). A file name you type yourself is never changed, and only extensions from a fixed list are used. `mint-gen --explain <program>` shows every decision and its reason. On a benchmark of 151 programs, no app passes its output file to the wrong option or argument, with or without the known-tools list (`MINT_IO_BENCH=1 go test -run TestIOBenchmark -v ./tools/mint-gen`).
-- **Facts about tools you add are checked before use.** mint-gen has a built-in list of what common tools read and write (tcpdump's `-w` capture file, nmap's `-oN`/`-oX`/`-oA` outputs, wget's log options…). You can add or correct entries in JSON files in `~/.config/mint-interfaces/tools.d/` or `/etc/mint-interfaces/tools.d/`. Such a file is read only if it and every folder above it belong to you or root and nobody else can change them, and only if it isn't a link and is under 256 KB. Its content must have exactly the expected shape, with option names, extensions and roles checked. Any problem is reported with `--check` and the file or entry is skipped. The files can describe options only; they can't change any safety setting.
-- **`mint-gen` only touches folders it created.** It refuses to scaffold into a folder that already has other files, and `--remove` and `--purge` delete only the files it generated (listed in the folder's `.mint-gen` file), leaving anything else in place. `--purge` names the folders in `apps/` that mint-gen did not create and leaves them alone, and never follows a link. Options may come before or after the program name.
-- **Check before you build.** `mint-gen --check <program>`, the summary after scaffolding, and the Safety section of `mint-gen --tui` all show a safety report: when the tool will run (automatically, only when asked, or only after the target is typed), each secret option and how its value is passed (standard input, which no one else can see; an environment variable, which only you and root can see, and whether it came from the built-in list or the man page; or the command line, which other users can see with `ps`), and the options that look destructive (`--force`, `--delete`, `-f` "never prompt"…). For example:
+- **Mint never asks for your sudo password.** A tool that needs root runs when the whole app is started with sudo (`sudo apps/tcpdump/tcpdump`), so the password goes to sudo's own prompt before Mint starts. `minte-gen --run` asks "Start it with sudo? [y/N]" for tools that usually need root (answer in advance with `--sudo` or `--no-sudo`). The app's "Root access" section shows whether it runs as root and, if not, the exact command to restart it with sudo; when a run fails with "permission denied" or similar, the app says the same. Started with sudo, the app still keeps its settings, history and results in your home and makes them belong to you, not to root.
+- **`minte-gen` reads a program's help without trusting it.** To learn a program's options it runs `man` and the program's `--help` (or `-h`), plus fuller help such as curl's `--help all` or the `dig -h` that dig's `--help` points to, but only when the program's own help mentions it, only with help arguments from a fixed list, and at most six runs in all. Each run is passed as a list of arguments (never through a shell), in its own session with no terminal and input closed, inside an empty temporary folder that is also its `HOME`, with a cleaned environment (your tokens and passwords are not passed on), a 5-second limit and a 2 MB output cap. Anything it leaves running afterwards is stopped. It never runs as root: under sudo it runs as you, and as plain root it runs as `nobody`.
+- **The app writes only where minte-gen is sure.** For each tool, minte-gen works out what it reads and writes, from three sources: the options' descriptions, its usage line, and the known-tools list. "Save output to file" then works one of three ways. The tool may write the file itself through its output option (`curl -o`) or as its last argument (`ffmpeg … out.mkv`). Otherwise Mint saves what the tool prints. A path is only passed to an option or argument when that's certain: a listed option, a clearly described one, or an output argument confirmed by the known-tools list. Anything unclear is shown as a path the app never writes to. For tools that only print progress messages (gzip, tar, ffmpeg), saving those messages is labelled as such and off by default. The output file's extension comes from the known-tools list, a format named in the output option's description, or the archetype. Text that Mint saves is never given a binary extension like `.pcap`. When you choose an output format in the app (pandoc `-t docx`, a `--json` switch, or the same typed into Extra arguments), the automatically named file follows it (`.docx`). A file name you type yourself is never changed, and only extensions from a fixed list are used. `minte-gen --explain <program>` shows every decision and its reason. On a benchmark of 151 programs, no app passes its output file to the wrong option or argument, with or without the known-tools list (`MINT_IO_BENCH=1 go test -run TestIOBenchmark -v ./tools/minte-gen`).
+- **Facts about tools you add are checked before use.** minte-gen has a built-in list of what common tools read and write (tcpdump's `-w` capture file, nmap's `-oN`/`-oX`/`-oA` outputs, wget's log options…). You can add or correct entries in JSON files in `~/.config/mint-interfaces/tools.d/` or `/etc/mint-interfaces/tools.d/`. Such a file is read only if it and every folder above it belong to you or root and nobody else can change them, and only if it isn't a link and is under 256 KB. Its content must have exactly the expected shape, with option names, extensions and roles checked. Any problem is reported with `--check` and the file or entry is skipped. The files can describe options only; they can't change any safety setting.
+- **`minte-gen` only touches folders it created.** It refuses to scaffold into a folder that already has other files, and `--remove` and `--purge` delete only the files it generated (listed in the folder's `.minte-gen` file), leaving anything else in place. `--purge` names the folders in `apps/` that minte-gen did not create and leaves them alone, and never follows a link. Options may come before or after the program name.
+- **Check before you build.** `minte-gen --check <program>`, the summary after scaffolding, and the Safety section of `minte-gen --tui` all show a safety report: when the tool will run (automatically, only when asked, or only after the target is typed), each secret option and how its value is passed (standard input, which no one else can see; an environment variable, which only you and root can see, and whether it came from the built-in list or the man page; or the command line, which other users can see with `ps`), and the options that look destructive (`--force`, `--delete`, `-f` "never prompt"…). For example:
 
   ```
   Safety:
@@ -668,7 +668,7 @@ Choose it for new files with `$MINT_SEALER=my-scheme-v1` or `{"sealer": "my-sche
 - **Masking has gaps.** Secrets shorter than 4 characters are not hidden in output. Files a tool writes through its own output option are not changed; they are made private, and "Encrypt the output" protects them. The Extra arguments box still shows what you typed while you edit it.
 - **Memory and deleted files are not absolute.** The in-memory folder can be swapped to disk like any memory, so use encrypted swap. When a file is encrypted, the original is overwritten and removed, but journaling and copy-on-write file systems and SSDs may keep old copies. A decrypted file shown in the viewer is held as ordinary Go strings while it is open.
 - **Data levels come from lists.** A tool, archetype or option that is not on the lists, or a secret in a format Mint does not recognise, is not detected. Set `ToolSpec.Data` yourself when you know better.
-- **Option detection depends on the help text.** `mint-gen` finds secret and destructive options from the man page and `--help`. A tool whose short help leaves options out (such as `curl`) may have secret options it does not know about. The text-box check still catches values typed by hand.
+- **Option detection depends on the help text.** `minte-gen` finds secret and destructive options from the man page and `--help`. A tool whose short help leaves options out (such as `curl`) may have secret options it does not know about. The text-box check still catches values typed by hand.
 
 ### Conclusion
 
@@ -688,7 +688,7 @@ Apps with their own `go.mod` under `apps/<tool>` are built the same way: `./tool
 `mint.App` handles a few things at startup, before taking over the terminal:
 
 - **Flags.** The first argument may be one of Mint's flags:
-  - `--help` (`-h`) lists the app's screens and usage, and points at `mint-gen --help` for the guide. It does not repeat that guide.
+  - `--help` (`-h`) lists the app's screens and usage, and points at `minte-gen --help` for the guide. It does not repeat that guide.
   - `--man` opens the Manual screen, the program's full manual. `--help` still prints usage. The same screen is the Manual item on the home menu.
   - `--version` (`-v`) prints `mytool 1.2.0 (Mint-Interfaces 1.0.1)`, using `App.Version` for the app's own version.
   - `--mint-info` prints a JSON description (title, version, screens, required and missing tools) for launchers such as Emacs.
@@ -709,7 +709,7 @@ Apps with their own `go.mod` under `apps/<tool>` are built the same way: `./tool
 | `~/.local/share/mint-<tool>/` | its run history | the first run |
 | `~/.config/mint-interfaces/` | the theme every app shares (`theme.conf`), and what Mint learned about your terminal (`termcaps.json`) | you save a theme; an app first starts |
 
-The Output Directory screen lists only results: the app's own files (`go.mod`, `main.go`, `spec.go`, the program) are left out, and `mint-gen --remove` and `--purge` delete only those, so saved results stay. Choose another folder on the Output Directory screen, or with `DefaultResultsDir` for an app you build yourself. An app with no folder of its own, or one whose folder has moved, saves to `~/mint-results/<tool>/`; settings saved when that was the default move to the app's own folder, and a folder you chose is kept.
+The Output Directory screen lists only results: the app's own files (`go.mod`, `main.go`, `spec.go`, the program) are left out, and `minte-gen --remove` and `--purge` delete only those, so saved results stay. Choose another folder on the Output Directory screen, or with `DefaultResultsDir` for an app you build yourself. An app with no folder of its own, or one whose folder has moved, saves to `~/mint-results/<tool>/`; settings saved when that was the default move to the app's own folder, and a folder you chose is kept.
 
 **Where the program runs.** Programs that write files of their own and never look at the folder they're in run in the results folder, so a capture, a scan report or a download lands there instead of wherever you started the app (`nmap -oA scan`, `tshark -w cap.pcap`, `curl -O`, `wget`, `ffmpeg … out.mkv`). These are the Ask, Look up, Watch, Record, Record sound, Probe, Measure, Convert, Generate, Transfer, Signal, Control and Device archetypes. What you type keeps its meaning: a relative path that names something in the folder you started the app in, a `./` or `../` path, and anything in a box for files the program reads are made absolute from that folder first (the command preview shows the full path). Names in boxes for files it writes stay relative, so they land in the results folder. Every other program runs where you started the app, because it works on that folder when given nothing else (`ls`, `rg`, `git`, `make`, `tar`) or changes the files you give it where they are (`mv`, `rsync`).
 

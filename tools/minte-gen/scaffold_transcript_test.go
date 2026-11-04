@@ -8,7 +8,7 @@ import (
 	"github.com/CurtisD4q/Mint-Interfaces/mint/appkit"
 )
 
-// A spec with WithTranscript keeps it when mint-gen writes spec.go.
+// A spec with WithTranscript keeps it when minte-gen writes spec.go.
 func TestScaffoldWritesTranscriptSpec(t *testing.T) {
 	tr, _ := appkit.KnownTranscriptSpec("psql")
 	src, err := renderSpecGo(appkit.ToolSpec{Name: "psql", Transcript: &tr})

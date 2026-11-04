@@ -186,7 +186,7 @@ func trustedOwner(fi os.FileInfo) error {
 // it and its folder pass trustedOwner, it is a regular file (not a link),
 // is small, and is valid JSON of exactly the expected shape (unknown
 // fields are refused, so a file cannot set anything else). Each problem is
-// reported and the file (or entry) skipped; nothing here can fail mint-gen.
+// reported and the file (or entry) skipped; nothing here can fail minte-gen.
 func loadKnownToolFiles(dir string) ([]KnownTool, []string) {
 	var tools []KnownTool
 	var warn []string
@@ -341,7 +341,7 @@ func KnownToolWarnings() []string {
 }
 
 // knownToolsOff hides the list, so the I/O benchmark can measure what
-// mint-gen works out from help text alone (tests only).
+// minte-gen works out from help text alone (tests only).
 var knownToolsOff bool
 
 // resetKnownTools forgets the registry (tests).

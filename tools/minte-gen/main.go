@@ -21,7 +21,7 @@ func main() {
 }
 
 func runCLI(args []string) int {
-	fs := flag.NewFlagSet("mint-gen", flag.ContinueOnError)
+	fs := flag.NewFlagSet("minte-gen", flag.ContinueOnError)
 	var (
 		checkTarget    string
 		explainTarget  string
@@ -42,7 +42,7 @@ func runCLI(args []string) int {
 		probeTerm      bool
 	)
 	fs.StringVar(&checkTarget, "check", "", "Check whether a program can run inside a pure Mint TUI")
-	fs.StringVar(&explainTarget, "explain", "", "Explain what a program reads and writes, and why, as mint-gen sees it")
+	fs.StringVar(&explainTarget, "explain", "", "Explain what a program reads and writes, and why, as minte-gen sees it")
 	fs.StringVar(&archetypeFlag, "archetype", "", "Choose the archetype yourself (e.g. probe, \"look up\"; see --list-archetypes)")
 	fs.BoolVar(&listArchetypes, "list-archetypes", false, "List the 38 archetypes and the add-ons")
 	fs.BoolVar(&listApps, "list", false, "List the apps in <repo>/apps")
@@ -51,7 +51,7 @@ func runCLI(args []string) int {
 	fs.BoolVar(&buildBin, "build", false, "Compile static Go binary (<tool>-mint) after scaffolding")
 	fs.BoolVar(&runApp, "run", false, "Launch the compiled <tool>-mint interface (builds it first if missing)")
 	fs.BoolVar(&removeApp, "remove", false, "Remove the scaffolded apps/<tool> directory and compiled <tool>-mint binary")
-	fs.BoolVar(&purgeApps, "purge", false, "Remove every app in <repo>/apps that mint-gen created, after asking to confirm (y/n)")
+	fs.BoolVar(&purgeApps, "purge", false, "Remove every app in <repo>/apps that minte-gen created, after asking to confirm (y/n)")
 	fs.BoolVar(&rootFlag, "sudo", false, "With --run: start the app with sudo without asking (sudo asks for the password)")
 	fs.BoolVar(&noRootFlag, "no-sudo", false, "With --run: start the app without sudo, without asking")
 	fs.StringVar(&themeFlag, "theme", "", "Set the colour theme for every Mint app (saved in ~/.config/mint-interfaces/theme.conf): default, terminal, nord, gruvbox, dracula, catppuccin or custom")
@@ -98,7 +98,7 @@ func runCLI(args []string) int {
 	} else if abs, err := filepath.Abs(repoRoot); err == nil && isRepoRoot(abs) {
 		repoRoot = abs
 	} else {
-		fmt.Fprintf(os.Stderr, "mint-gen: %s is not the Mint-Interfaces folder (no go.mod for github.com/CurtisD4q/Mint-Interfaces)\n", safeTerminalText(repoRoot))
+		fmt.Fprintf(os.Stderr, "minte-gen: %s is not the Mint-Interfaces folder (no go.mod for github.com/CurtisD4q/Mint-Interfaces)\n", safeTerminalText(repoRoot))
 		return 2
 	}
 	// Everything below except --check and --explain builds, lists or
@@ -156,7 +156,7 @@ func runCLI(args []string) int {
 		fmt.Printf("Terminal:    %s\n", formatTermSummary(prof, cached))
 		if !rep.Compatible && rep.Category == CatFullScreenTUI {
 			if _, m := ParseProgramIO(checkTarget); m.Batch != nil {
-				fmt.Printf("Batch mode:  %s %s (%s): mint-gen can build it in this mode\n", checkTarget, strings.Join(m.Batch.Args, " "), m.Batch.Why)
+				fmt.Printf("Batch mode:  %s %s (%s): minte-gen can build it in this mode\n", checkTarget, strings.Join(m.Batch.Args, " "), m.Batch.Why)
 				rep.Compatible = true
 			}
 		}
@@ -174,7 +174,7 @@ func runCLI(args []string) int {
 	}
 
 	if fs.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: mint-gen [--list] [--list-archetypes] [--explain <program>] [--archetype <archetype>] [--check <program>] [--force] [--build] [--run] [--remove] [--out <dir>] <program> [output-dir]")
+		fmt.Fprintln(os.Stderr, "Usage: minte-gen [--list] [--list-archetypes] [--explain <program>] [--archetype <archetype>] [--check <program>] [--force] [--build] [--run] [--remove] [--out <dir>] <program> [output-dir]")
 		return 2
 	}
 
@@ -221,7 +221,7 @@ func runCLI(args []string) int {
 	if archetypeFlag != "" {
 		a, ok := resolveArchetypeFlag(archetypeFlag)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "mint-gen: unknown archetype %q (run `mint-gen --list-archetypes` to see them)\n", safeTerminalText(archetypeFlag))
+			fmt.Fprintf(os.Stderr, "minte-gen: unknown archetype %q (run `minte-gen --list-archetypes` to see them)\n", safeTerminalText(archetypeFlag))
 			return 2
 		}
 		srcs, _ := CollectHelpNotes(program)
@@ -235,7 +235,7 @@ func runCLI(args []string) int {
 	prof, _, cached := ensureTermProfile(false)
 	res, err := ScaffoldApp(spec, outDir, repoRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "mint-gen: scaffold error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "minte-gen: scaffold error: %v\n", err)
 		return 1
 	}
 
@@ -253,7 +253,7 @@ func runCLI(args []string) int {
 
 	if buildBin {
 		if err := buildScaffoldedApp(res.AppDir, res.BinaryOut); err != nil {
-			fmt.Fprintf(os.Stderr, "mint-gen: build error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "minte-gen: build error: %v\n", err)
 			return 1
 		}
 		fmt.Printf("Built static binary: %s\n", res.BinaryOut)
@@ -265,7 +265,7 @@ func runCLI(args []string) int {
 }
 
 // flagsFirst moves options written after the program name (as in
-// `mint-gen --remove nmap --out dir`) in front of it, because the flag
+// `minte-gen --remove nmap --out dir`) in front of it, because the flag
 // package stops at the first plain argument. Arguments after "--", and
 // everything after the program name when --run is given, are left alone.
 func flagsFirst(fs *flag.FlagSet, args []string) []string {
@@ -354,23 +354,23 @@ func removeScaffoldedApp(program, outDir, repoRoot string) int {
 	}
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "mint-gen: remove error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "minte-gen: remove error: %v\n", err)
 		return 1
 	}
 	st, err := os.Stat(absDir)
 	if err != nil || !st.IsDir() {
-		fmt.Fprintf(os.Stderr, "mint-gen: no build found for %q at %s\n", program, absDir)
+		fmt.Fprintf(os.Stderr, "minte-gen: no build found for %q at %s\n", program, absDir)
 		return 1
 	}
-	// Only a folder mint-gen created, and only the files it created: anything
+	// Only a folder minte-gen created, and only the files it created: anything
 	// else in the folder is left alone.
 	if !isScaffold(absDir, tool) {
-		fmt.Fprintf(os.Stderr, "mint-gen: refusing to remove %s: mint-gen did not create it\n", absDir)
+		fmt.Fprintf(os.Stderr, "minte-gen: refusing to remove %s: minte-gen did not create it\n", absDir)
 		return 1
 	}
 	for _, name := range scaffoldFiles(tool) {
 		if err := os.Remove(filepath.Join(absDir, name)); err != nil && !os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "mint-gen: remove error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "minte-gen: remove error: %v\n", err)
 			return 1
 		}
 	}
@@ -406,7 +406,7 @@ func existingBinaryPath(program, outDir, repoRoot string) string {
 func runBuiltApp(binPath string, appArgs []string, asRoot bool) int {
 	cmd, err := launchCommand(binPath, appArgs, asRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "mint-gen: %v\n", err)
+		fmt.Fprintf(os.Stderr, "minte-gen: %v\n", err)
 		return 1
 	}
 	cmd.Stdin = os.Stdin
@@ -416,7 +416,7 @@ func runBuiltApp(binPath string, appArgs []string, asRoot bool) int {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return exitErr.ExitCode()
 		}
-		fmt.Fprintf(os.Stderr, "mint-gen: run error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "minte-gen: run error: %v\n", err)
 		return 1
 	}
 	return 0
@@ -471,11 +471,11 @@ func rootAbove(dir string) string {
 }
 
 // detectRepoRoot finds the Mint-Interfaces folder, so apps are always
-// built in its apps/ folder wherever mint-gen is run from: the folder
-// you are in (or one above it), then the folder mint-gen itself was built
+// built in its apps/ folder wherever minte-gen is run from: the folder
+// you are in (or one above it), then the folder minte-gen itself was built
 // in (a copy on PATH, or a link to one), then $MINT_INTERFACES_ROOT, then
 // the global install. It
-// returns "" when there is none; mint-gen then stops rather than writing
+// returns "" when there is none; minte-gen then stops rather than writing
 // apps into the folder you happen to be in.
 func detectRepoRoot() string {
 	if wd, err := os.Getwd(); err == nil {
@@ -504,7 +504,7 @@ func detectRepoRoot() string {
 
 // noRootMessage says what to do when the Mint-Interfaces folder is not
 // found.
-const noRootMessage = "mint-gen: cannot find the Mint-Interfaces folder, so it will not build apps here. Run it from inside that folder, pass --root /path/to/mint-interfaces, or set MINT_INTERFACES_ROOT to that folder."
+const noRootMessage = "minte-gen: cannot find the Mint-Interfaces folder, so it will not build apps here. Run it from inside that folder, pass --root /path/to/mint-interfaces, or set MINT_INTERFACES_ROOT to that folder."
 
 func runInteractiveTUI(initialProgram, repoRoot string) error {
 	prog := initialProgram
@@ -530,7 +530,7 @@ func runInteractiveTUI(initialProgram, repoRoot string) error {
 	mainScr := func() *mint.Screen {
 		scr := &mint.Screen{
 			Icon:  "◈",
-			Title: "mint-gen",
+			Title: "minte-gen",
 			Status: func() []mint.Badge {
 				if rep.Compatible {
 					return []mint.Badge{{Text: prog + " · " + spec.ArchetypeID, Kind: mint.BadgeOK}}
@@ -654,7 +654,7 @@ func runInteractiveTUI(initialProgram, repoRoot string) error {
 
 	app := &mint.App{
 		Title: "◈ Mint Generator",
-		Crumb: "mint-gen",
+		Crumb: "minte-gen",
 		Note:  "man-page & --help interface scaffolder (38 Archetypes · Mixins)",
 		Items: []mint.HomeItem{
 			{Icon: "▸", Label: "Inspect & Scaffold", Desc: "Detect the archetype, inspect parsed flags, and scaffold apps/<tool>", Open: mainScr},
@@ -694,10 +694,10 @@ func printApps(out, errOut io.Writer, repoRoot string) int {
 	return 0
 }
 
-// purgeAllApps removes every app in <repo>/apps that mint-gen created,
+// purgeAllApps removes every app in <repo>/apps that minte-gen created,
 // after listing them and asking to confirm (y/n). Only what --remove would
-// delete goes: folders mint-gen did not create are named and left alone,
-// and in an app folder only the files mint-gen wrote are removed. Anything
+// delete goes: folders minte-gen did not create are named and left alone,
+// and in an app folder only the files minte-gen wrote are removed. Anything
 // but y or yes (including no answer) removes nothing.
 func purgeAllApps(in io.Reader, out, errOut io.Writer, repoRoot string) int {
 	dir := filepath.Join(repoRoot, "apps")
@@ -727,7 +727,7 @@ func purgeAllApps(in io.Reader, out, errOut io.Writer, repoRoot string) int {
 		if !e.IsDir() {
 			continue
 		}
-		// A real folder, named as mint-gen names one, that it created.
+		// A real folder, named as minte-gen names one, that it created.
 		if sanitizeToolName(name) == name && isScaffold(filepath.Join(dir, name), name) {
 			apps = append(apps, name)
 		} else {
@@ -735,7 +735,7 @@ func purgeAllApps(in io.Reader, out, errOut io.Writer, repoRoot string) int {
 		}
 	}
 	if len(others) > 0 {
-		fmt.Fprintf(out, "Left alone (mint-gen did not create them): %s\n", safeTerminalText(strings.Join(others, ", ")))
+		fmt.Fprintf(out, "Left alone (minte-gen did not create them): %s\n", safeTerminalText(strings.Join(others, ", ")))
 	}
 	if len(apps) == 0 {
 		fmt.Fprintf(out, "No apps to remove in %s\n", dir)
@@ -760,7 +760,7 @@ func purgeAllApps(in io.Reader, out, errOut io.Writer, repoRoot string) int {
 		}
 	}
 	if failed > 0 {
-		fmt.Fprintf(errOut, "mint-gen: %d of %d apps could not be removed\n", failed, len(apps))
+		fmt.Fprintf(errOut, "minte-gen: %d of %d apps could not be removed\n", failed, len(apps))
 		return 1
 	}
 	fmt.Fprintf(out, "Removed %d app(s).\n", len(apps))
@@ -771,7 +771,7 @@ func purgeAllApps(in io.Reader, out, errOut io.Writer, repoRoot string) int {
 // and why, so a mistake (or someone else's file) is never silent.
 func printKnownToolWarnings(w io.Writer) {
 	for _, msg := range KnownToolWarnings() {
-		fmt.Fprintln(w, "mint-gen: tools.d: "+safeTerminalText(msg))
+		fmt.Fprintln(w, "minte-gen: tools.d: "+safeTerminalText(msg))
 	}
 }
 
@@ -792,16 +792,16 @@ func safeTerminalText(s string) string {
 func saveThemeForEveryApp(name string) int {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if !knownThemeName(name) {
-		fmt.Fprintf(os.Stderr, "mint-gen: unknown theme %q. Themes: %s\n", safeTerminalText(name), strings.Join(theme.Names, ", "))
+		fmt.Fprintf(os.Stderr, "minte-gen: unknown theme %q. Themes: %s\n", safeTerminalText(name), strings.Join(theme.Names, ", "))
 		return 2
 	}
 	if err := theme.Set(name); err != nil {
-		fmt.Fprintf(os.Stderr, "mint-gen: could not save the theme: %v\n", err)
+		fmt.Fprintf(os.Stderr, "minte-gen: could not save the theme: %v\n", err)
 		return 1
 	}
 	fmt.Printf("Theme: %s for every Mint app (saved in %s). Apps that are open use it when they next start.\n", name, theme.ConfigPath)
 	if os.Geteuid() == 0 && os.Getenv("SUDO_USER") != "" {
-		fmt.Println("       This is root's theme file. Run mint-gen --theme without sudo to set your own.")
+		fmt.Println("       This is root's theme file. Run minte-gen --theme without sudo to set your own.")
 	}
 	return 0
 }

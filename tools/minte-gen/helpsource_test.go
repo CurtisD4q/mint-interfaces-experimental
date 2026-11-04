@@ -15,7 +15,7 @@ import (
 // that), and returns its path.
 func fakeHelpTool(t *testing.T, name, body string) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "mint-gen-test-")
+	dir, err := os.MkdirTemp("", "minte-gen-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestHelpRunnerIsolation(t *testing.T) {
 		}
 	}
 	realHome, _ := os.UserHomeDir()
-	if home == "" || home == realHome || pwd != home || !strings.Contains(home, "mint-gen-help-") {
+	if home == "" || home == realHome || pwd != home || !strings.Contains(home, "minte-gen-help-") {
 		t.Fatalf("HOME=%q PWD=%q", home, pwd)
 	}
 	if !strings.Contains(out, "HOMEFILES=created-on-first-run") {
@@ -193,7 +193,7 @@ func names(srcs []HelpSource) string {
 // program (running as nobody when tests run as root) did something there.
 func openDir(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "mint-gen-open-")
+	dir, err := os.MkdirTemp("", "minte-gen-open-")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestMintGenHelpIsTheGuide(t *testing.T) {
+func TestMinteGenHelpIsTheGuide(t *testing.T) {
 	for _, arg := range []string{"--help", "-h"} {
 		t.Run(arg, func(t *testing.T) {
 			var code int
@@ -20,10 +20,10 @@ func TestMintGenHelpIsTheGuide(t *testing.T) {
 				t.Fatalf("exit %d", code)
 			}
 			for _, want := range []string{
-				"Using mint-gen",
-				"mint-gen ps",
-				"mint-gen --build ps",
-				"mint-gen --run ps",
+				"Using minte-gen",
+				"minte-gen ps",
+				"minte-gen --build ps",
+				"minte-gen --run ps",
 				"--check",
 				"--explain",
 				"--list",
@@ -52,7 +52,7 @@ func TestMintGenHelpIsTheGuide(t *testing.T) {
 				}
 			}
 			flagsAt := strings.Index(out, "\nFlags:\n")
-			if flagsAt < 0 || flagsAt < strings.Index(out, "Using mint-gen") {
+			if flagsAt < 0 || flagsAt < strings.Index(out, "Using minte-gen") {
 				t.Fatalf("flag list is not after the guide:\n%s", out)
 			}
 			list := out[flagsAt:]
@@ -66,7 +66,7 @@ func TestMintGenHelpIsTheGuide(t *testing.T) {
 }
 
 func TestRunFlagKeepsProgramHelp(t *testing.T) {
-	fs := flag.NewFlagSet("mint-gen", flag.ContinueOnError)
+	fs := flag.NewFlagSet("minte-gen", flag.ContinueOnError)
 	fs.Bool("run", false, "")
 	fs.SetOutput(io.Discard)
 	ordered := flagsFirst(fs, []string{"--run", "ps", "--help"})

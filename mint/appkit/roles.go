@@ -1,8 +1,8 @@
 package appkit
 
 // ArgRole is what an option's value is for: a plain value, or a file or
-// folder the tool reads or writes. mint-gen decides it from the help text
-// (see ClassifyArg in tools/mint-gen) and records it in FlagSpec.Role.
+// folder the tool reads or writes. minte-gen decides it from the help text
+// (see ClassifyArg in tools/minte-gen) and records it in FlagSpec.Role.
 type ArgRole string
 
 const (

@@ -447,7 +447,7 @@ func readOneLineSummary(name string) string {
 var programName = regexp.MustCompile(`^[A-Za-z0-9._+-]+$`)
 
 // shellType reports what the shell's "type" says name is. Telling a shell
-// built-in from a program needs a shell, so this is the one place mint-gen
+// built-in from a program needs a shell, so this is the one place minte-gen
 // starts one. name is passed as a positional parameter ("$1"), never as
 // part of the script, so nothing in it is run as shell syntax.
 func shellType(name string) ([]byte, error) {

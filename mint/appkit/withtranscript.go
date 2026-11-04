@@ -38,7 +38,7 @@ var transcriptDefaults = map[string]string{
 }
 
 // KnownTranscriptSpec returns WithTranscript's settings for a program Mint
-// knows. mint-gen doesn't attach it by itself: psql and sqlite3 are as
+// knows. minte-gen doesn't attach it by itself: psql and sqlite3 are as
 // often run for one query (the Query archetype), so the archetype decides.
 func KnownTranscriptSpec(bin string) (TranscriptSpec, bool) {
 	ad, ok := transcriptDefaults[toolBase(bin)]

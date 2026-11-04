@@ -39,9 +39,9 @@ func ScaffoldApp(spec appkit.ToolSpec, outDir, repoRoot string) (ScaffoldResult,
 		return ScaffoldResult{}, fmt.Errorf("the spec for %s is not valid: %w", tool, err)
 	}
 	// Never write go.mod and main.go over somebody's project: only an empty
-	// (or new) folder, or one mint-gen made, may be used.
+	// (or new) folder, or one minte-gen made, may be used.
 	if entries, err := os.ReadDir(absOut); err == nil && len(entries) > 0 && !isScaffold(absOut, tool) {
-		return ScaffoldResult{}, fmt.Errorf("%s already has files that mint-gen did not create; choose an empty folder with --out", absOut)
+		return ScaffoldResult{}, fmt.Errorf("%s already has files that minte-gen did not create; choose an empty folder with --out", absOut)
 	}
 	if err := os.MkdirAll(absOut, 0o755); err != nil {
 		return ScaffoldResult{}, err
@@ -94,22 +94,22 @@ func ScaffoldApp(spec appkit.ToolSpec, outDir, repoRoot string) (ScaffoldResult,
 	}, nil
 }
 
-// scaffoldMarker is written into every folder mint-gen creates. --remove and
+// scaffoldMarker is written into every folder minte-gen creates. --remove and
 // re-scaffolding only touch folders that have it (or an older scaffold's
 // exact files).
-const scaffoldMarker = ".mint-gen"
+const scaffoldMarker = ".minte-gen"
 
 func markerText(tool string) string {
-	return "Created by mint-gen. `mint-gen --remove " + tool + "` deletes only these files:\n" +
+	return "Created by minte-gen. `minte-gen --remove " + tool + "` deletes only these files:\n" +
 		strings.Join(scaffoldFiles(tool), "\n") + "\n"
 }
 
-// scaffoldFiles are the only files mint-gen creates in an app folder.
+// scaffoldFiles are the only files minte-gen creates in an app folder.
 func scaffoldFiles(tool string) []string {
 	return []string{"go.mod", "go.sum", "main.go", "spec.go", tool + "-mint.el", tool + "-mint", scaffoldMarker}
 }
 
-// isScaffold reports whether dir was made by mint-gen for tool: it has the
+// isScaffold reports whether dir was made by minte-gen for tool: it has the
 // marker, or (scaffolds made before the marker existed) its main.go and
 // spec.go are exactly the generated kind.
 func isScaffold(dir, tool string) bool {

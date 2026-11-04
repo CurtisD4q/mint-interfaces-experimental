@@ -23,10 +23,10 @@ var shells = map[string]bool{
 var shellAllowed = map[string]string{
 	// Telling a shell built-in from a program needs a shell. The name is
 	// validated and passed as "$1", never as script text.
-	"tools/mint-gen/compat.go:shellType": "positional parameter only",
+	"tools/minte-gen/compat.go:shellType": "positional parameter only",
 }
 
-// Mint runs programs directly. Library code, templates and mint-gen must
+// Mint runs programs directly. Library code, templates and minte-gen must
 // never start a shell, where text from a user or a program could be run as
 // commands. Tests and examples may.
 func TestNoShellExecution(t *testing.T) {
