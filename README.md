@@ -1,4 +1,6 @@
-# Mint Interfaces (Go)
+# Mint Interfaces Experimental (Go)
+
+This is a experimental version of Mint-Interfaces 
 
 **Version 1.0.1**, a fix release on top of 1.0.0, the first stable release. Every app reports it: `mytool --version` prints `mytool 1.2.0 (Mint-Interfaces 1.0.1)`.
 
