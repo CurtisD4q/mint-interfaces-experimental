@@ -29,7 +29,7 @@ Run an app directly. If the binary is not there yet, minte-gen builds it first:
 
   minte-gen --run ps
 
-Other flags you will want: --check (will this program work in the app?), --explain (what minte-gen understood), --list (apps already built), --list-archetypes (the kinds of program), --archetype (pick a kind yourself), --theme (set the colour theme for every app: minte-gen --theme nord), --remove (delete an app), --purge (delete every app, after asking), and --out (choose the folder). Every flag is listed at the bottom.
+Other flags you will want: --check (will this program work in the app?), --explain (what minte-gen understood), --list (apps already built), --list-archetypes (the kinds of program), --archetype (pick a kind yourself), --theme (set the colour theme for every app: minte-gen --theme nord), --remove (delete an app), --purge (delete every app, after asking), --install (put minte-gen in ~/.local/bin/mint-interfaces-experimental so it runs from anywhere), and --out (choose the folder). Every flag is listed at the bottom.
 
 Using a Mint app
 

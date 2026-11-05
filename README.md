@@ -2,13 +2,13 @@
 
 This is a experimental version of Mint-Interfaces 
 
-**Version 1.0.1**, a fix release on top of 1.0.0, the first stable release. Every app reports it: `mytool --version` prints `mytool 1.2.0 (Mint-Interfaces 1.0.1)`.
+**Version 1.1.0**: installs for one user in your home (`minte-gen --install`), alongside the system-wide install. Every app reports its version: `mytool --version` prints `mytool 1.2.0 (Mint-Interfaces 1.1.0)`.
 
 A zero-dependency terminal UI library, ported from the Lua original ([mint-interfaces-legacy](https://github.com/CurtisD4q/mint-interfaces-legacy)).
 
-The library is the generic interface layer from [Terminal Settings Manager](https://github.com/CurtisD4q/Terminal-Settings-Manager) by Curtis (Apache-2.0). It draws a rounded frame (purple by default, with six more [colour themes](#colour)) with a title on the left and a breadcrumb on the right. Inside are a home list (icon, bold title, dim description), a selection bar, value rows, sliders, `‹ ›` pickers, toggles, actions, section headers, a scrollbar, and a key-hint footer. Keyboard and mouse both work: click selects, double-click opens, and the wheel scrolls. Redraws are dirty-gated, so an idle screen does not repaint.
+The library is the generic interface layer from [Terminal Settings Manager](https://github.com/CurtisD4q/Terminal-Settings-Manager) by Curtis (Apache-2.0). It draws a rounded frame (purple by default, with six more [colour themes](#colour)) with a title on the left and a breadcrumb on the right. Inside are a home list (icon, bold title, dim description), a selection bar, value rows, sliders, `‹ ›` pickers, toggles, actions, section headers, a scrollbar, and a key-hint footer. Keyboard and mouse both work: click selects, double-click opens, and the wheel scrolls. The row under the pointer shows a hover mark (`›`, label brightened) and a row being pressed shows in reverse video until the button goes up or the pointer slides off it (see [Hover and pressed states](#hover-and-pressed-states)). Redraws are dirty-gated, so an idle screen does not repaint, and moving the pointer within one row repaints nothing.
 
-On top of the original, it adds dividers and spacing, text styles, a banner title, collapsible sections, slider ranges and units, progress bars, number steppers, checkboxes, radio groups, toasts, status badges, a loading spinner, background jobs with live output, and a catalogue for building interfaces for command-line programs. See [Additions](#additions). Every app also gets standard command-line flags, a Theme screen, emacs and vim key profiles, and can be launched from Emacs, matching its theme. See [Standalone binaries and flags](#standalone-binaries-and-flags), [Keys](#keys) and [Running from Emacs](#running-from-emacs-emacsmintel).
+On top of the original, it adds dividers and spacing, text styles, collapsible sections, slider ranges and units, progress bars, number steppers, checkboxes, radio groups, toasts, status badges, a loading spinner, background jobs with live output, and a catalogue for building interfaces for command-line programs. See [Additions](#additions). Every app also gets standard command-line flags, a Theme screen, emacs and vim key profiles, and can be launched from Emacs, matching its theme. See [Standalone binaries and flags](#standalone-binaries-and-flags), [Keys](#keys) and [Running from Emacs](#running-from-emacs-emacsmintel).
 
 There is no settings logic and no system backend in the library. An app describes screens as structs and handles its own data.
 
@@ -52,24 +52,59 @@ You can generate and compile a full Mint interface for any installed command-lin
    ./apps/nmap/nmap-mint
    ```
 
-### Global install: Run `minte-gen` from anywhere
+### Install: Run `minte-gen` from anywhere
 
-Move the `mint-interfaces-experimental` folder to `/usr/local/share/mint-interfaces-experimental` and install `/usr/local/bin/minte-gen` so you can check, build, and run any tool's interface from any directory:
+There are three ways to run minte-gen. Pick one; they all build apps in the same place, the repository's `apps/<tool>/`.
+
+| Way | Where things live | Needs sudo | Best for |
+|---|---|---|---|
+| From the downloaded repo | wherever you cloned it | no | trying it out, working on Mint |
+| For you (user install) | repo in `~/.local/share/mint-interfaces-experimental`, launcher in `~/.local/bin/mint-interfaces-experimental/minte-gen` | no | one person; apps that don't need root |
+| For everyone (system install) | repo in `/usr/local/share/mint-interfaces-experimental`, launcher in `/usr/local/bin/minte-gen` | to install | shared computers; apps you start with sudo |
+
+**From the downloaded repo.** Inside the folder, `go run ./tools/minte-gen --build nmap` works as in the Quickstart. From any other folder, use Go's `-C`:
+
+```sh
+go -C /path/to/mint-interfaces-experimental run ./tools/minte-gen --build nmap
+```
+
+Go moves into the repo to build minte-gen, and minte-gen moves back to the folder you ran it from, so relative paths (`--out ./x`) and the folder `--run` starts an app in are yours. (`go run /path/to/mint-interfaces-experimental/tools/minte-gen` from another folder can't work: Go needs the module in the folder you are in.)
+
+**For you (user install).** No sudo, everything in your home:
+
+1. Put the repository in `~/.local/share/mint-interfaces-experimental` (or `$XDG_DATA_HOME/mint-interfaces`):
+   ```sh
+   mkdir -p ~/.local/share
+   mv mint-interfaces ~/.local/share/mint-interfaces-experimental
+   ```
+2. Install the launcher:
+   ```sh
+   go -C ~/.local/share/mint-interfaces-experimental run ./tools/minte-gen --install
+   ```
+   This writes `~/.local/bin/mint-interfaces-experimental/minte-gen`, a three-line script that runs the repository's own minte-gen with `go -C … run`, so it is never out of date after a `git pull`. It only ever replaces a launcher it wrote itself. Run it again from another copy of the repository to point the launcher there.
+3. Put the launcher's folder on your `PATH`, if `--install` says it isn't: add this line to `~/.profile` (or `~/.bashrc`, `~/.zshrc`) and open a new terminal.
+   ```sh
+   export PATH="$HOME/.local/bin/mint-interfaces-experimental:$PATH"
+   ```
+
+**For everyone (system install).** `minte-gen --install --system` prints these commands; minte-gen never runs sudo itself.
 
 1. Move the repository to `/usr/local/share/mint-interfaces-experimental` and make `apps/` writable by your user so builds do not need `sudo`:
    ```sh
-   sudo mv mint-interfaces-experimental /usr/local/share/mint-interfaces-experimental
+   sudo mv mint-interfaces /usr/local/share/mint-interfaces-experimental
    sudo mkdir -p /usr/local/share/mint-interfaces-experimental/apps
    sudo chown -R "$USER:$USER" /usr/local/share/mint-interfaces-experimental/apps
    ```
 2. Install `/usr/local/bin/minte-gen` to invoke `minte-gen` from `/usr/local/share/mint-interfaces-experimental`:
    ```sh
    sudo tee /usr/local/bin/minte-gen >/dev/null << 'EOF'
-   #!/usr/bin/env sh
+   #!/bin/sh
    exec go -C /usr/local/share/mint-interfaces-experimental run ./tools/minte-gen "$@"
    EOF
    sudo chmod +x /usr/local/bin/minte-gen
    ```
+
+**Apps that need root.** sudo runs an app's program as root, so that program must be one only root can change. When anyone but root could replace it (the user install, or a system install whose `apps/` you own, as in step 1 above), anything running as you could swap it before sudo runs it. So `minte-gen --run` doesn't offer sudo for it: it says why and starts the app without root. `--sudo` still chooses sudo, with a note.
 
 Once installed, the steps from any directory are:
 
@@ -106,9 +141,9 @@ Once installed, the steps from any directory are:
    minte-gen --theme nord
    ```
 
-Other flags: `--archetype` chooses the archetype yourself, `--out DIR` builds somewhere other than `apps/<tool>`, `--force` builds a program the compatibility check refused, `--sudo` / `--no-sudo` answer `--run`'s sudo question in advance, `--root` points at the Mint-Interfaces folder when it isn't found automatically, and `--tui` opens minte-gen's own interface.
+Other flags: `--archetype` chooses the archetype yourself, `--out DIR` builds somewhere other than `apps/<tool>`, `--force` builds a program the compatibility check refused, `--sudo` / `--no-sudo` answer `--run`'s sudo question in advance, `--root` points at the Mint-Interfaces folder when it isn't found automatically, `--install` (with `--system`) installs minte-gen, and `--tui` opens minte-gen's own interface. `--remove` and `--purge` also delete a `<tool>-mint` link to the app in `/usr/local/bin` or `~/.local/bin/mint-interfaces-experimental`, only when it points at that app.
 
-**Apps are always built inside Mint-Interfaces.** minte-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then from where the `minte-gen` program itself is (so a link on your `PATH` to a `minte-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `/usr/local/share/mint-interfaces-experimental`. If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
+**Apps are always built inside Mint-Interfaces.** minte-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then the repository the launcher (`go -C … run`) started it in, then from where the `minte-gen` program itself is (so a link on your `PATH` to a `minte-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `~/.local/share/mint-interfaces-experimental` (the user install), then `/usr/local/share/mint-interfaces-experimental` (the system install). If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
 
 `minte-gen --help` is the one guide for Mint-Interfaces. It covers scaffolding and running an app (`minte-gen ps`, `minte-gen --build ps`, `minte-gen --run ps`, and the other flags), then how to use the app: the home menu, setting options and running a command, pane keys (Tab, Shift-Tab, `[`, `]`, `|`, and a click to focus), table keys (left and right to scroll sideways, H and L to narrow or widen a column), Presets, Run History, and Manual / `--man` for the program's full manual. The flag list follows the guide. A generated app's own `--help` stays a short usage list; `--man` still opens that app's Manual screen.
 
@@ -345,7 +380,6 @@ mint/screen.go                 Screen, Ctx, row widgets, editing, mouse
 mint/rows.go                   row constructors
 mint/dialogs.go                confirm, message, choose, prompt, password
 mint/footer.go                 status badges, toasts, the loading spinner
-mint/banner.go                 big titles in 3×5 half-block letters (App.BannerText)
 mint/log.go                    the output view and full-screen viewer
 mint/keys.go                   key profiles (default, emacs, vim)
 mint/render.go                 palette, frame, title, footer, scrollbar, wrapping
@@ -401,32 +435,6 @@ A terminal can't change font size, so `mint.Label` gives text a hierarchy throug
 | `mint.StyleCaption` | muted |
 | `mint.StyleItalic` | italic |
 | `mint.StyleUnderline` | underlined |
-
-### Banner
-
-Set `BannerText` on the `App` to draw its name as a big title at the top of the home list. The letters come from a 3×5 pixel font packed two pixel rows to a terminal row with `▀ ▄ █`, so a banner is three rows tall and four columns per character (three for the letter, one gap).
-
-```go
-app := &mint.App{
-	Title:      "◈ Example",
-	BannerText: "MINT",
-	Items:      items,
-}
-```
-
-```
-█▄█ ▀█▀ █▀▄ ▀█▀
-█▀█  █  █ █  █
-▀ ▀ ▀▀▀ ▀ ▀  ▀
-```
-
-The banner sits under the title rule, followed by one blank row, then the app's `Note`, then the list. It is drawn in the theme's accent colour, bold.
-
-- **Characters.** `A`–`Z` (lower case draws as upper case), `0`–`9`, space, and `. , - _ : ! ? ' / +`. Anything else draws as `?`.
-- **When it is left out.** The home list looks exactly as it did without a banner when the terminal is not UTF-8 (the ASCII fallback has no half-blocks), when the banner is wider than the frame (it needs `BannerWidth(text) + 6` columns), or when it would leave room for fewer than two home items. Nothing is drawn and nothing is reported, so a banner is safe to set for every terminal.
-- **Only the home list.** Inner screens keep their title bar. To draw a banner somewhere else, `mint.Banner(text)` returns its three lines, `mint.BannerWidth(text)` the width, and `mint.BannerHeight` the height.
-
-`BannerText` is not the `Screen.Banner` field, which is the amber notice line under a screen's title. `examples/features` shows a banner.
 
 ### Collapsible sections
 
@@ -518,7 +526,7 @@ What the runner takes care of:
 
 `runner.Percent` and `runner.Fraction` (`12/80`, `3 of 7`) cover most progress formats; any `func(line string) (int, bool)` works.
 
-**The output view.** `mint.Log` shows the newest lines in a fixed-height box under a heading row such as `Output  128 lines · view`. Enter or a double-click on the heading opens the full output in a viewer that keeps following new lines until you scroll up. Errors are shown in amber. The viewer is also available directly as `mint.ViewLog(title, lines)` or `mint.ViewLogWith(mint.ViewLogOpts{...})` and supports horizontal panning (`←`/`→`, `0` to reset), case-insensitive search (`/`, `n`, `N`), and saving the full output to a named file (`s`). `mint.CleanLine` also resolves backspace overstrikes (`\b`) from `man` pages while preserving single-width Unicode box-drawing and Braille characters.
+**The output view.** `mint.Log` shows the newest lines in a fixed-height box under a heading row such as `Output  128 lines · view`. Enter or a double-click on the heading opens the full output in a viewer that keeps following new lines until you scroll up. Errors are shown in amber. The viewer is also available directly as `mint.ViewLog(title, lines)` or `mint.ViewLogWith(mint.ViewLogOpts{...})` and supports horizontal panning (`←`/`→`, `0` to reset), case-insensitive search (`/`, `n`, `N`), saving the full output to a named file (`s`), and copying it to the clipboard (`y`, see [Links and copying](#links-and-copying)). `mint.CleanLine` also resolves backspace overstrikes (`\b`) from `man` pages while preserving single-width Unicode box-drawing and Braille characters.
 
 **Slow work without a ctx.** `mint.Busy("Applying…", fn)` is `ctx.Busy` for code that has no `ctx`, such as a row's `Set`.
 
@@ -690,7 +698,7 @@ Apps with their own `go.mod` under `apps/<tool>` are built the same way: `./tool
 - **Flags.** The first argument may be one of Mint's flags:
   - `--help` (`-h`) lists the app's screens and usage, and points at `minte-gen --help` for the guide. It does not repeat that guide.
   - `--man` opens the Manual screen, the program's full manual. `--help` still prints usage. The same screen is the Manual item on the home menu.
-  - `--version` (`-v`) prints `mytool 1.2.0 (Mint-Interfaces 1.0.1)`, using `App.Version` for the app's own version.
+  - `--version` (`-v`) prints `mytool 1.2.0 (Mint-Interfaces 1.1.0)`, using `App.Version` for the app's own version.
   - `--mint-info` prints a JSON description (title, version, screens, required and missing tools) for launchers such as Emacs.
   - `--screen NAME` opens that home item directly, and Back returns to the home list.
   - `--theme NAME` uses one of the seven [themes](#colour) for this run only. It may come before any of the others: `mytool --theme nord --screen Run`.
@@ -705,9 +713,11 @@ Apps with their own `go.mod` under `apps/<tool>` are built the same way: `./tool
 | Folder | What's in it | Created when |
 |---|---|---|
 | `<mint-interfaces-experimental>/apps/<tool>/` | the output files it saves (its Output Directory), next to the app itself | the first time a run saves output |
-| `~/.config/mint-<tool>/` | its settings and presets | you change a setting or save a preset |
-| `~/.local/share/mint-<tool>/` | its run history | the first run |
-| `~/.config/mint-interfaces/` | the theme every app shares (`theme.conf`), and what Mint learned about your terminal (`termcaps.json`) | you save a theme; an app first starts |
+| `~/.config/mint-interfaces/<tool>/` | its settings: the target, Extra arguments and every option you set, remembered between runs and rebuilds (`settings.json`) | you change a setting |
+| `~/.local/share/mint-interfaces-apps/<tool>/` | its run history (`runs.json`), saved presets, command transcript, last findings and rule backups | the first run |
+| `~/.config/mint-interfaces/` | the theme every app shares (`theme.conf`), and what Mint learned about your terminal (`termcaps.json`); each app's settings folder is inside it | you save a theme; an app first starts |
+
+Every app's own data sits under one folder, `~/.local/share/mint-interfaces-apps/`, apart from the repository (`~/.local/share/mint-interfaces-experimental` in the user install), so re-cloning or deleting the repository never wipes your history and presets. Earlier versions used `~/.local/share/mint-<tool>/`; the first run of an app moves its files from there (only `runs.json`, `presets.json`, `commands.json`, `findings-last.json` and `rule-backups`; never over a file already in the new folder, never through a link) and removes the old folder if that leaves it empty. The same goes for settings: earlier versions used `~/.config/mint-<tool>/`, and the first run moves `settings.json` from there. A tool is never given a settings folder named like something the shared folder holds (`theme.conf`, `termcaps.json`, `security.json`, `tools.d`); it gets an `app-` prefix instead. To start an app from scratch, delete its settings folder and its data folder.
 
 The Output Directory screen lists only results: the app's own files (`go.mod`, `main.go`, `spec.go`, the program) are left out, and `minte-gen --remove` and `--purge` delete only those, so saved results stay. Choose another folder on the Output Directory screen, or with `DefaultResultsDir` for an app you build yourself. An app with no folder of its own, or one whose folder has moved, saves to `~/mint-results/<tool>/`; settings saved when that was the default move to the app's own folder, and a folder you chose is kept.
 
@@ -716,6 +726,53 @@ The Output Directory screen lists only results: the app's own files (`go.mod`, `
 **Saving from the output viewer.** `s` in the full-screen viewer offers the results folder, and saves as privately as the Save captured output action: readable only by you when the run's data is sensitive. A file you decrypted to read cannot be saved from the viewer, so it never reaches the disk unencrypted.
 
 **Under sudo.** An app started with sudo keeps its settings, history and results in your home, not root's, and hands what it writes back to you, including results in its own folder when Mint-Interfaces is installed in `/usr/local/share`; the app's folder and its own files stay root's, so nobody can swap the program sudo runs. Mint's shared settings (`theme.conf`, `termcaps.json`, `security.json`, `tools.d/`) are root's own under sudo, in `/root/.config/mint-interfaces/`, even when sudo keeps `HOME` pointing at your home, so root never creates files there. Your theme is still read when root has none of its own.
+
+## Hover and pressed states
+
+Mint asks the terminal for every mouse motion (mode 1003, with SGR reports) as well as clicks. In app screens, panes, the command bar, the home list and pick lists:
+
+- **Hover.** The row under the pointer gets a `›` in the cursor column and a bright label. The selected row keeps its bar; hover is only shown on the others.
+- **Pressed.** While the left button is held on a row, the row is drawn in reverse video. Sliding off the row drops the look; sliding back brings it back. Letting go ends it. Clicking still works as before (click selects, double-click opens).
+
+Motion never reaches a screen as a key, so nothing else changes: the pointer position is kept, and a screen redraws only when the pointer moves to another row or the button goes down or up. When the terminal loses focus (focus reporting, mode 1004), the hover is dropped, because the pointer is somewhere else. Both looks are palette-free, so they also read on a terminal with no colour.
+
+Set `MINT_HOVER=0` to stop motion reports, for a slow SSH link say; clicks and the wheel work as before. Terminals without SGR mouse reporting never send motion, and Emacs's `term` doesn't pass it on, so there is no hover there.
+
+## Links and copying
+
+**Clickable links (OSC 8).** URLs (`http`, `https`, `ftp`) and paths to files or folders that exist (absolute, or under `~/`) in a program's output, and in values such as the command preview, are sent as OSC 8 hyperlinks. In a terminal that supports them (kitty, WezTerm, iTerm2, GNOME Terminal and other VTE terminals, Windows Terminal, foot, Ghostty, Alacritty, tmux 3.4 and later) a click, usually with Ctrl or Cmd held, opens them. Elsewhere nothing changes on screen.
+
+- Only text that is the link itself is linked, so a link always goes where it says. A program's own hyperlinks are removed when its output is cleaned, so its text can't say one thing and open another.
+- `main.go:12:4` links `main.go`; trailing punctuation and an unmatched `)` are left out of a URL.
+- A path links as `file://<this computer's name>/path`, so over SSH the terminal can tell the file is on another computer.
+- A value cut short with `…` is not linked, since it would go somewhere else.
+- Set `MINT_LINKS=0` to turn them off. They are off in Emacs's `term`, which would show the sequences as text, and on in `vterm`.
+
+**One-key copy (OSC 52).** `y` copies to the clipboard of the computer you're sitting at, through the terminal, so it works over SSH:
+
+| Where | `y` copies |
+|---|---|
+| A value row, such as the command preview | the value as shown (secrets stay masked) |
+| A table row | its cells, tab-separated |
+| Any other row | its label |
+| The output viewer | the whole output, without its colours |
+
+- Escape sequences and control characters are removed first, so what you paste is the text as shown and can't drive the terminal you paste it into.
+- Mint only ever sets the clipboard; it never reads it.
+- Text over 74 KB isn't sent, since many terminals drop a longer copy without a word; save it with `s` instead.
+- An app whose results are secret doesn't copy them (clipboard managers often keep a history), and a file decrypted to read can't be copied from the viewer. A command preview or a setting can still be copied.
+- Inside tmux, Mint sends the copy both ways tmux can pass it on: it needs `set -g set-clipboard on` or `set -g allow-passthrough on`. GNU screen is handled too.
+- Terminals that take OSC 52 include kitty, WezTerm, iTerm2 (turn on "Applications in terminal may access clipboard"), Alacritty, foot, Ghostty, Windows Terminal and xterm (with `allowWindowOps`). Elsewhere the copy is ignored; the toast says it was sent "if this terminal takes OSC 52" when Mint couldn't tell.
+
+In your own screens, `ctx.Copy(text, "the path")` copies and shows the toast, and `mint.Copy(text)` copies and returns an error. Set `mint.CopyGuard` to refuse copying a program's output (generated apps refuse it when their results are secret).
+
+## Dimming when unfocused
+
+Where the terminal reports focus (mode 1004), an app whose window or tmux pane loses focus is drawn faint, so the app you are typing in stands out from the ones beside it. When focus comes back, or a key or click arrives, it is drawn as before. Nothing is laid out again: Mint draws the frame already on screen once more with faint (SGR 2) added, keeping every colour, so dimming costs one write.
+
+- In tmux, focus reports need `set -g focus-events on`; then each tmux pane dims on its own.
+- Terminals without focus reporting never send it, so apps there stay as they are.
+- Set `MINT_DIM_UNFOCUSED=0` to keep apps bright when unfocused.
 
 ## Keys
 
@@ -839,7 +896,7 @@ end)
 
 Settings that matter:
 
-- **tmux: `set -g mouse on`** for mouse clicks to reach the app (and the popup), and **`set -sg escape-time 10`**, because tmux otherwise holds every Esc for half a second before passing it on.
+- **tmux: `set -g mouse on`** for mouse clicks to reach the app (and the popup), and **`set -sg escape-time 10`**, because tmux otherwise holds every Esc for half a second before passing it on. Optionally `set -g focus-events on` (unfocused panes dim) and `set -g set-clipboard on` (`y` copies).
 - **Vim: `set ttimeout ttimeoutlen=50`** (already set by Vim's `defaults.vim`, but not with `vim -u NONE`), or Esc waits a second. `set mouse=a` for clicks.
 - **Neovim** needs nothing: Esc is passed on at once, and mouse clicks work in Terminal mode.
 - **Key profiles:** tmux's prefix is `C-b`, which the emacs profile uses for ← and the vim profile for Page Up. Press `C-b C-b` to send it through, use the arrow keys, or change the tmux prefix.

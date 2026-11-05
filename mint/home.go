@@ -15,7 +15,7 @@ import (
 )
 
 // Version of the library.
-const Version = "1.0.1"
+const Version = "1.1.0"
 
 // HomeItem is one entry on the home list: an icon, a bold label, and a dim
 // description. Open returns the screen to show (nil stays on the list).
@@ -33,14 +33,6 @@ type App struct {
 	Note        string // optional amber line under the home title
 	Items       []HomeItem
 	ScreenHints string // footer override for every screen
-
-	// BannerText, when set, is drawn as a big title (see Banner) at the top
-	// of the home list, above the Note. It is left out, and the list looks as
-	// it always has, when the terminal is not UTF-8, is too narrow for it,
-	// or is too short to keep two home items on screen beneath it. Not to be
-	// confused with Screen.Banner, the amber notice line under a screen's
-	// title.
-	BannerText string
 
 	// SectionSpacing puts that many blank lines between named sections on
 	// every screen (a screen's own setting wins).
@@ -77,7 +69,7 @@ type App struct {
 
 const homeBlock = 3
 
-func runHome(items []HomeItem, startSel int, title, breadcrumb, note, banner, hints string, statusFn func() []Badge) (int, bool) {
+func runHome(items []HomeItem, startSel int, title, breadcrumb, note, hints string, statusFn func() []Badge) (int, bool) {
 	sel := startSel
 	if sel < 1 {
 		sel = 1
@@ -91,6 +83,7 @@ func runHome(items []HomeItem, startSel int, title, breadcrumb, note, banner, hi
 	lastClickIdx, lastClickTime := 0, time.Time{}
 	footSig := ""
 	pageItems := 1
+	var ptrSeen pointerWatch
 
 	draw := func(h, w int) {
 		cv := begin(h, w)
@@ -112,20 +105,16 @@ func runHome(items []HomeItem, startSel int, title, breadcrumb, note, banner, hi
 				noteLines = append(noteLines, nl[1])
 			}
 		}
-		// Row 3 is the rule. A banner, when there is room for one, starts on
-		// row 4 with a blank row under it; then come the note's rows (they
-		// sit on the blank row that used to be under the rule, so the list
-		// still starts where it did) and then the list.
-		noteRows := 0
+		// Row 3 is the rule. Notes move down onto the blank row that
+		// used to sit under them, so the list still starts where it did.
+		contentTop := 4
 		if len(noteLines) > 0 && noteLines[0] != "" {
-			noteRows = len(noteLines)
-		}
-		bannerLines, noteTop, contentTop := homeHeaderRows(h, w, banner, noteRows, rt.profile.ASCIIOnly)
-		for i, line := range bannerLines {
-			cv.put(4+i, 3, bannerStyle()+line+Reset)
-		}
-		for i := 0; i < noteRows; i++ {
-			cv.put(noteTop+i, 3, C.Amber+noteLines[i]+Reset)
+			cv.put(4, 3, C.Amber+noteLines[0]+Reset)
+			contentTop = 5
+			if len(noteLines) > 1 {
+				cv.put(5, 3, C.Amber+noteLines[1]+Reset)
+				contentTop = 6
+			}
 		}
 		contentBottom := h - 2
 		avail := contentBottom - contentTop + 1
@@ -167,10 +156,21 @@ func runHome(items []HomeItem, startSel int, title, breadcrumb, note, banner, hi
 				label = cat.Icon + " " + label
 			}
 			label = Truncate(label, textw)
-			if idx == sel {
+			// An item is three rows: any of them shows it hovered or pressed.
+			pressed, hovered := false, false
+			for dy := 0; dy < homeBlock; dy++ {
+				pressed = pressed || pressedAt(y+dy)
+				hovered = hovered || hoverAt(y+dy)
+			}
+			switch {
+			case pressed:
+				cv.paintPressed(y, w, label)
+			case idx == sel:
 				cv.selBar(y, w)
 				cv.put(y, 3, C.SelBg+C.Accent+C.Bold+"▸ "+C.Bright+label+Reset)
-			} else {
+			case hovered:
+				cv.put(y, 3, C.Muted+hoverMark+Reset+C.Bright+label+Reset)
+			default:
 				cv.put(y, 3, C.Text+"  "+label+Reset)
 			}
 			lines := wrap2(cat.Desc, textw)
@@ -222,6 +222,9 @@ func runHome(items []HomeItem, startSel int, title, breadcrumb, note, banner, hi
 				}
 			}
 			if footerSig(callStatus(statusFn)) != footSig {
+				dirty = true
+			}
+			if ptrSeen.changed() {
 				dirty = true
 			}
 		case k.Mouse != nil && (k.Mouse.WheelUp || k.Mouse.WheelDown):
@@ -367,7 +370,7 @@ func (a *App) Run() {
 		}
 		for {
 			if len(stack) == 0 {
-				choice, ok := runHome(a.all, sel, title, "Home", note, a.BannerText, HomeHints, a.Status)
+				choice, ok := runHome(a.all, sel, title, "Home", note, HomeHints, a.Status)
 				if !ok {
 					return ""
 				}

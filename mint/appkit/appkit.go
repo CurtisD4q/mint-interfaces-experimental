@@ -402,8 +402,8 @@ func New(spec ToolSpec) *ToolApp {
 	if resDir == "" {
 		resDir = homeResults
 	}
-	cfgDir := filepath.Join(home, ".config", "mint-"+spec.Name)
-	dataDir := filepath.Join(home, ".local", "share", "mint-"+spec.Name)
+	cfgDir := configDirFor(home, spec.Name)
+	dataDir := dataDirFor(home, spec.Name)
 
 	values := make(map[string]string, len(spec.Flags))
 	for _, f := range spec.Flags {
@@ -436,12 +436,21 @@ func New(spec ToolSpec) *ToolApp {
 	if wd, err := os.Getwd(); err == nil {
 		a.launchDir = wd
 	}
+	// Secret results stay off the clipboard, which clipboard managers
+	// often keep; sensitive ones may be copied, as they may be saved.
+	mint.CopyGuard = func() error {
+		if level, _ := a.DataLevel(); level == DataSecret {
+			return errors.New("this app's results are secret, so they are not copied")
+		}
+		return nil
+	}
 
 	if len(spec.Profiles) > 0 {
 		a.ApplyProfile(spec.Profiles[0].Name)
 	}
 	a.ResolveDynamicChoices()
 	a.memSetting = nil
+	a.migrateOldConfig(oldConfigDirFor(home, spec.Name))
 	_ = a.LoadSettings()
 	switch {
 	case a.memSetting != nil && *a.memSetting:
@@ -454,6 +463,7 @@ func New(spec ToolSpec) *ToolApp {
 	case a.memSetting == nil && spec.Data == DataSecret:
 		_ = a.SetInMemory(true)
 	}
+	a.migrateOldData(oldDataDirFor(home, spec.Name))
 	a.loadHistory()
 	a.loadPresets()
 	return a

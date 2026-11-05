@@ -196,7 +196,6 @@ func main() {
 		Title:          "◈ Mint features",
 		Crumb:          "Features",
 		Note:           "New in this version: layout, text styles, controls, and footer feedback.",
-		BannerText:     "FEATURES", // a big title in 3x5 half-block letters; skipped if the terminal is too small
 		SectionSpacing: 1,
 		Status: func() []mint.Badge {
 			svc := mint.Badge{Text: "service running", Kind: mint.BadgeOK}
