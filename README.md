@@ -8,7 +8,7 @@ A zero-dependency terminal UI library, ported from the Lua original ([mint-inter
 
 The library is the generic interface layer from [Terminal Settings Manager](https://github.com/CurtisD4q/Terminal-Settings-Manager) by Curtis (Apache-2.0). It draws a rounded frame (purple by default, with six more [colour themes](#colour)) with a title on the left and a breadcrumb on the right. Inside are a home list (icon, bold title, dim description), a selection bar, value rows, sliders, `‹ ›` pickers, toggles, actions, section headers, a scrollbar, and a key-hint footer. Keyboard and mouse both work: click selects, double-click opens, and the wheel scrolls. The row under the pointer shows a hover mark (`›`, label brightened) and a row being pressed shows in reverse video until the button goes up or the pointer slides off it (see [Hover and pressed states](#hover-and-pressed-states)). Redraws are dirty-gated, so an idle screen does not repaint, and moving the pointer within one row repaints nothing.
 
-On top of the original, it adds dividers and spacing, text styles, collapsible sections, slider ranges and units, progress bars, number steppers, checkboxes, radio groups, toasts, status badges, a loading spinner, background jobs with live output, and a catalogue for building interfaces for command-line programs. See [Additions](#additions). Every app also gets standard command-line flags, a Theme screen, emacs and vim key profiles, and can be launched from Emacs, matching its theme. See [Standalone binaries and flags](#standalone-binaries-and-flags), [Keys](#keys) and [Running from Emacs](#running-from-emacs-emacsmintel).
+On top of the original, it adds dividers and spacing, text styles, a banner title, collapsible sections, slider ranges and units, progress bars, number steppers, checkboxes, radio groups, toasts, status badges, a loading spinner, background jobs with live output, and a catalogue for building interfaces for command-line programs. See [Additions](#additions). Every app also gets standard command-line flags, a Theme screen, emacs and vim key profiles, and can be launched from Emacs, matching its theme. See [Standalone binaries and flags](#standalone-binaries-and-flags), [Keys](#keys) and [Running from Emacs](#running-from-emacs-emacsmintel).
 
 There is no settings logic and no system backend in the library. An app describes screens as structs and handles its own data.
 
@@ -380,6 +380,7 @@ mint/screen.go                 Screen, Ctx, row widgets, editing, mouse
 mint/rows.go                   row constructors
 mint/dialogs.go                confirm, message, choose, prompt, password
 mint/footer.go                 status badges, toasts, the loading spinner
+mint/banner.go                 big titles in 3×5 half-block letters (App.BannerText)
 mint/log.go                    the output view and full-screen viewer
 mint/keys.go                   key profiles (default, emacs, vim)
 mint/render.go                 palette, frame, title, footer, scrollbar, wrapping
@@ -435,6 +436,32 @@ A terminal can't change font size, so `mint.Label` gives text a hierarchy throug
 | `mint.StyleCaption` | muted |
 | `mint.StyleItalic` | italic |
 | `mint.StyleUnderline` | underlined |
+
+### Banner
+
+Set `BannerText` on the `App` to draw its name as a big title at the top of the home list. The letters come from a 3×5 pixel font packed two pixel rows to a terminal row with `▀ ▄ █`, so a banner is three rows tall and four columns per character (three for the letter, one gap).
+
+```go
+app := &mint.App{
+	Title:      "◈ Example",
+	BannerText: "MINT",
+	Items:      items,
+}
+```
+
+```
+█▄█ ▀█▀ █▀▄ ▀█▀
+█▀█  █  █ █  █
+▀ ▀ ▀▀▀ ▀ ▀  ▀
+```
+
+The banner sits under the title rule, followed by one blank row, then the app's `Note`, then the list. It is drawn in the theme's accent colour, bold.
+
+- **Characters.** `A`–`Z` (lower case draws as upper case), `0`–`9`, space, and `. , - _ : ! ? ' / +`. Anything else draws as `?`.
+- **When it is left out.** The home list looks exactly as it did without a banner when the terminal is not UTF-8 (the ASCII fallback has no half-blocks), when the banner is wider than the frame (it needs `BannerWidth(text) + 6` columns), or when it would leave room for fewer than two home items. Nothing is drawn and nothing is reported, so a banner is safe to set for every terminal.
+- **Only the home list.** Inner screens keep their title bar. To draw a banner somewhere else, `mint.Banner(text)` returns its three lines, `mint.BannerWidth(text)` the width, and `mint.BannerHeight` the height.
+
+`BannerText` is not the `Screen.Banner` field, which is the amber notice line under a screen's title. `examples/features` shows a banner.
 
 ### Collapsible sections
 
