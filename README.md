@@ -72,10 +72,14 @@ Go moves into the repo to build minte-gen, and minte-gen moves back to the folde
 
 **For you (user install).** No sudo, everything in your home:
 
-1. Put the repository in `~/.local/share/mint-interfaces-experimental` (or `$XDG_DATA_HOME/mint-interfaces`):
+1. Put the repository in `~/.local/share/mint-interfaces-experimental` (or `$XDG_DATA_HOME/mint-interfaces-experimental`). Clone it straight there:
    ```sh
    mkdir -p ~/.local/share
-   mv mint-interfaces ~/.local/share/mint-interfaces-experimental
+   git clone https://github.com/CurtisD4q/Mint-Interfaces-Experimental.git ~/.local/share/mint-interfaces-experimental
+   ```
+   or, if you have already cloned it, move your clone (`git clone` names the folder after the URL, so it is `Mint-Interfaces-Experimental` unless you named it yourself):
+   ```sh
+   mv Mint-Interfaces-Experimental ~/.local/share/mint-interfaces-experimental
    ```
 2. Install the launcher:
    ```sh
@@ -91,7 +95,7 @@ Go moves into the repo to build minte-gen, and minte-gen moves back to the folde
 
 1. Move the repository to `/usr/local/share/mint-interfaces-experimental` and make `apps/` writable by your user so builds do not need `sudo`:
    ```sh
-   sudo mv mint-interfaces /usr/local/share/mint-interfaces-experimental
+   sudo mv Mint-Interfaces-Experimental /usr/local/share/mint-interfaces-experimental
    sudo mkdir -p /usr/local/share/mint-interfaces-experimental/apps
    sudo chown -R "$USER:$USER" /usr/local/share/mint-interfaces-experimental/apps
    ```
