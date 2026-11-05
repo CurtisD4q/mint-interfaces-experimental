@@ -438,7 +438,7 @@ func buildScaffoldedApp(appDir, binOut string) error {
 }
 
 // installedRoot is where the README's global install puts Mint-Interfaces.
-var installedRoot = "/usr/local/share/mint-interfaces"
+var installedRoot = "/usr/local/share/mint-interfaces-experimental"
 
 // isRepoRoot reports whether dir is the Mint-Interfaces folder: its go.mod
 // is the module itself, not one of the apps inside it.

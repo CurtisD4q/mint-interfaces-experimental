@@ -54,19 +54,19 @@ You can generate and compile a full Mint interface for any installed command-lin
 
 ### Global install: Run `minte-gen` from anywhere
 
-Move the `mint-interfaces` folder to `/usr/local/share/mint-interfaces` and install `/usr/local/bin/minte-gen` so you can check, build, and run any tool's interface from any directory:
+Move the `mint-interfaces-experimental` folder to `/usr/local/share/mint-interfaces-experimental` and install `/usr/local/bin/minte-gen` so you can check, build, and run any tool's interface from any directory:
 
-1. Move the repository to `/usr/local/share/mint-interfaces` and make `apps/` writable by your user so builds do not need `sudo`:
+1. Move the repository to `/usr/local/share/mint-interfaces-experimental` and make `apps/` writable by your user so builds do not need `sudo`:
    ```sh
-   sudo mv mint-interfaces /usr/local/share/mint-interfaces
-   sudo mkdir -p /usr/local/share/mint-interfaces/apps
-   sudo chown -R "$USER:$USER" /usr/local/share/mint-interfaces/apps
+   sudo mv mint-interfaces-experimental /usr/local/share/mint-interfaces-experimental
+   sudo mkdir -p /usr/local/share/mint-interfaces-experimental/apps
+   sudo chown -R "$USER:$USER" /usr/local/share/mint-interfaces-experimental/apps
    ```
-2. Install `/usr/local/bin/minte-gen` to invoke `minte-gen` from `/usr/local/share/mint-interfaces`:
+2. Install `/usr/local/bin/minte-gen` to invoke `minte-gen` from `/usr/local/share/mint-interfaces-experimental`:
    ```sh
    sudo tee /usr/local/bin/minte-gen >/dev/null << 'EOF'
    #!/usr/bin/env sh
-   exec go -C /usr/local/share/mint-interfaces run ./tools/minte-gen "$@"
+   exec go -C /usr/local/share/mint-interfaces-experimental run ./tools/minte-gen "$@"
    EOF
    sudo chmod +x /usr/local/bin/minte-gen
    ```
@@ -108,7 +108,7 @@ Once installed, the steps from any directory are:
 
 Other flags: `--archetype` chooses the archetype yourself, `--out DIR` builds somewhere other than `apps/<tool>`, `--force` builds a program the compatibility check refused, `--sudo` / `--no-sudo` answer `--run`'s sudo question in advance, `--root` points at the Mint-Interfaces folder when it isn't found automatically, and `--tui` opens minte-gen's own interface.
 
-**Apps are always built inside Mint-Interfaces.** minte-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then from where the `minte-gen` program itself is (so a link on your `PATH` to a `minte-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `/usr/local/share/mint-interfaces`. If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
+**Apps are always built inside Mint-Interfaces.** minte-gen puts every app in the Mint-Interfaces folder's `apps/<tool>/`, wherever you run it from. It finds that folder from the folder you are in (or one above it), then from where the `minte-gen` program itself is (so a link on your `PATH` to a `minte-gen` built inside the folder works), then `$MINT_INTERFACES_ROOT`, then `/usr/local/share/mint-interfaces-experimental`. If none of those is Mint-Interfaces, it stops and says so, rather than writing `apps/` into the folder you happen to be in. `--root DIR` names the folder yourself.
 
 `minte-gen --help` is the one guide for Mint-Interfaces. It covers scaffolding and running an app (`minte-gen ps`, `minte-gen --build ps`, `minte-gen --run ps`, and the other flags), then how to use the app: the home menu, setting options and running a command, pane keys (Tab, Shift-Tab, `[`, `]`, `|`, and a click to focus), table keys (left and right to scroll sideways, H and L to narrow or widen a column), Presets, Run History, and Manual / `--man` for the program's full manual. The flag list follows the guide. A generated app's own `--help` stays a short usage list; `--man` still opens that app's Manual screen.
 
@@ -704,7 +704,7 @@ Apps with their own `go.mod` under `apps/<tool>` are built the same way: `./tool
 
 | Folder | What's in it | Created when |
 |---|---|---|
-| `<mint-interfaces>/apps/<tool>/` | the output files it saves (its Output Directory), next to the app itself | the first time a run saves output |
+| `<mint-interfaces-experimental>/apps/<tool>/` | the output files it saves (its Output Directory), next to the app itself | the first time a run saves output |
 | `~/.config/mint-<tool>/` | its settings and presets | you change a setting or save a preset |
 | `~/.local/share/mint-<tool>/` | its run history | the first run |
 | `~/.config/mint-interfaces/` | the theme every app shares (`theme.conf`), and what Mint learned about your terminal (`termcaps.json`) | you save a theme; an app first starts |
